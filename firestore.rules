@@ -1,0 +1,114 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Deny Catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Security Helper Functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isPlatformAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'teamstock07@gmail.com' ||
+        (request.auth.uid != null && exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['platformowner', 'PlatformOwner', 'superadmin', 'SuperAdmin'])
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128;
+    }
+
+    // Users Collection (Profile & Stores)
+    match /users/{userId} {
+      // Allow single read if owner, self, or signed in (for team/manager lookup)
+      allow get: if isSignedIn() && (request.auth.uid == userId || isPlatformAdmin());
+      allow list: if isSignedIn() && isPlatformAdmin();
+
+      // Creation allowed during signup for authenticated user UID
+      allow create: if isSignedIn() && (request.auth.uid == userId || isPlatformAdmin());
+
+      // Updates allowed for self or admin
+      allow update: if isSignedIn() && (
+        isPlatformAdmin() ||
+        (request.auth.uid == userId && (
+          // Prevent non-admins from self-escalating roles to platform admin
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']) ||
+          resource.data.role == request.resource.data.role
+        ))
+      );
+
+      // Deletion strictly reserved for platform admins
+      allow delete: if isPlatformAdmin();
+
+      // Nested subcollections (products, sales, purchases, inventory, etc.)
+      match /{subcollection=**} {
+        allow read, write: if isSignedIn() && (request.auth.uid == userId || isPlatformAdmin());
+      }
+    }
+
+    // Subscription Requests Collection (CamelCase)
+    match /subscriptionRequests/{requestId} {
+      allow create: if isSignedIn() && (
+        request.resource.data.userId == request.auth.uid ||
+        request.resource.data.uid == request.auth.uid ||
+        isPlatformAdmin()
+      );
+      allow get: if isSignedIn() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.uid == request.auth.uid ||
+        isPlatformAdmin()
+      );
+      allow list: if isSignedIn() && isPlatformAdmin();
+      allow update, delete: if isSignedIn() && isPlatformAdmin();
+    }
+
+    // Subscription Requests Collection (Snake_case compatibility)
+    match /subscription_requests/{requestId} {
+      allow create: if isSignedIn() && (
+        request.resource.data.userId == request.auth.uid ||
+        request.resource.data.uid == request.auth.uid ||
+        isPlatformAdmin()
+      );
+      allow get: if isSignedIn() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.uid == request.auth.uid ||
+        isPlatformAdmin()
+      );
+      allow list: if isSignedIn() && isPlatformAdmin();
+      allow update, delete: if isSignedIn() && isPlatformAdmin();
+    }
+
+    // Team Invitations Collection
+    match /teamInvitations/{invitationId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && (
+        request.resource.data.invitedBy == request.auth.uid ||
+        request.resource.data.ownerId == request.auth.uid ||
+        isPlatformAdmin()
+      );
+      allow update, delete: if isSignedIn() && (
+        resource.data.invitedBy == request.auth.uid ||
+        resource.data.ownerId == request.auth.uid ||
+        isPlatformAdmin()
+      );
+    }
+
+    // Email Verification OTPs (Protected: Managed exclusively by server API)
+    match /emailVerifications/{docId} {
+      allow read, write: if false;
+    }
+
+    // Global Public Settings (e.g., payment methods, store configuration)
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isPlatformAdmin();
+    }
+  }
+}
