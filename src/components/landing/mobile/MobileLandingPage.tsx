@@ -802,7 +802,7 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
             >
               <span>{isBn ? '১ বছর' : '1-Yr'}</span>
               <span className="px-1 py-0.2 rounded bg-amber-400 text-slate-950 text-[8px] font-black">
-                {isBn ? '৫০% ছাড়' : '50%'}
+                {isBn ? '১৫% ছাড়' : '15%'}
               </span>
             </button>
             <button

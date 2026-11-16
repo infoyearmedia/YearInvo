@@ -4,10 +4,10 @@
  * Single Source of Truth for:
  * - 3 Exact Plans: Free Trial (30 days / 1 month), Pro, Premium
  * - 3 Supported Billing Periods: 1 Month (monthly), 6 Months (six_months), 1 Year (yearly)
- * - Bangladesh (BDT) Local Pricing & Discounts (Pro: ৳100/mo, ৳540 6mo = 10% off, ৳600 1yr = 50% off, ৳4,500 5yr = 25% off; Premium: ৳250/mo, ৳1,275 6mo = 15% off, ৳1,500 1yr = 50% off, ৳11,250 5yr = 25% off)
- * - International (USD) Base Pricing & Discounts (Pro: $1.50/mo, $7.65 6mo = 15% off, $9.00 1yr = 50% off, $67.50 5yr = 25% off; Premium: $3.50/mo, $17.85 6mo = 15% off, $21.00 1yr = 50% off, $157.50 5yr = 25% off)
+ * - Bangladesh (BDT) Local Pricing & Discounts (Pro: ৳100/mo, ৳540 6mo = 10% off, ৳1,020 1yr = 15% off, ৳4,500 5yr = 25% off; Premium: ৳250/mo, ৳1,275 6mo = 15% off, ৳2,550 1yr = 15% off, ৳11,250 5yr = 25% off)
+ * - International (USD) Base Pricing & Discounts (Pro: $1.50/mo, $7.65 6mo = 15% off, $15.30 1yr = 15% off, $67.50 5yr = 25% off; Premium: $3.50/mo, $17.85 6mo = 15% off, $35.70 1yr = 15% off, $157.50 5yr = 25% off)
  * - Every long-cycle total below is exactly monthly x months x (1 - discount), so the
- *   advertised discount labels (50% yearly, 25% five-year) are always true.
+ *   advertised discount labels (15% yearly, 25% five-year) are always true.
  * - Dynamic Live Currency Conversion Engine for any display currency
  * - Authoritative Plan Limits and Feature Restrictions
  */
@@ -51,8 +51,8 @@ export const PRICING_CONFIG = {
       monthlyRenewal: 100,
       sixMonths: 540, // ৳540 = 10% off 6 x ৳100 (৳600)
       sixMonthsDiscountPercent: 10,
-      yearly: 600, // ৳600 = 50% off 12 x ৳100 (৳1,200), i.e. ৳50/mo
-      yearlyDiscountPercent: 50,
+      yearly: 1020, // ৳1,020 = 15% off 12 x ৳100 (৳1,200), i.e. ৳85/mo
+      yearlyDiscountPercent: 15,
       fiveYear: 4500, // ৳4,500 = 25% off 60 x ৳100 (৳6,000), i.e. ৳75/mo
       fiveYearDiscountPercent: 25,
     },
@@ -62,8 +62,8 @@ export const PRICING_CONFIG = {
       monthlyRenewal: 250,
       sixMonths: 1275, // ৳1,275 = 15% off 6 x ৳250 (৳1,500)
       sixMonthsDiscountPercent: 15,
-      yearly: 1500, // ৳1,500 = 50% off 12 x ৳250 (৳3,000), i.e. ৳125/mo
-      yearlyDiscountPercent: 50,
+      yearly: 2550, // ৳2,550 = 15% off 12 x ৳250 (৳3,000), i.e. ৳212.50/mo
+      yearlyDiscountPercent: 15,
       fiveYear: 11250, // ৳11,250 = 25% off 60 x ৳250 (৳15,000), i.e. ৳187.50/mo
       fiveYearDiscountPercent: 25,
     },
@@ -78,8 +78,8 @@ export const PRICING_CONFIG = {
       monthlyRenewal: 1.50,
       sixMonths: 7.65, // $7.65 = 15% off 6 x $1.50 ($9.00)
       sixMonthsDiscountPercent: 15,
-      yearly: 9.00, // $9.00 = 50% off 12 x $1.50 ($18.00), i.e. $0.75/mo
-      yearlyDiscountPercent: 50,
+      yearly: 15.30, // $15.30 = 15% off 12 x $1.50 ($18.00), i.e. $1.28/mo
+      yearlyDiscountPercent: 15,
       fiveYear: 67.50, // $67.50 = 25% off 60 x $1.50 ($90.00), i.e. $1.13/mo
       fiveYearDiscountPercent: 25,
     },
@@ -89,8 +89,8 @@ export const PRICING_CONFIG = {
       monthlyRenewal: 3.50,
       sixMonths: 17.85, // $17.85 = 15% off 6 x $3.50 ($21.00)
       sixMonthsDiscountPercent: 15,
-      yearly: 21.00, // $21.00 = 50% off 12 x $3.50 ($42.00), i.e. $1.75/mo
-      yearlyDiscountPercent: 50,
+      yearly: 35.70, // $35.70 = 15% off 12 x $3.50 ($42.00), i.e. $2.98/mo
+      yearlyDiscountPercent: 15,
       fiveYear: 157.50, // $157.50 = 25% off 60 x $3.50 ($210.00), i.e. $2.63/mo
       fiveYearDiscountPercent: 25,
     },
