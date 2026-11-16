@@ -29,7 +29,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenLogin, onOpenSig
   };
 
   return (
-    <div className={`landing-font min-h-screen ${theme === 'dark' ? 'dark bg-[#09090b] text-slate-100' : 'bg-[#F8FAFC] text-slate-900'} font-sans select-none relative overflow-x-hidden transition-colors`}>
+    <div className={`landing-font min-h-screen ${theme === 'dark' ? 'dark bg-[#09090b] text-slate-100' : 'bg-[#F8FAFC] text-slate-900'} font-sans select-none relative overflow-x-clip transition-colors`}>
       
       {/* ========================================================= */}
       {/* MOBILE LANDING PAGE (Exclusive for phones < 768px)       */}

@@ -538,7 +538,7 @@ const defaultSettings: BusinessSettings = {
   receiptHeader: 'Thank you for choosing YearInvo by Year Media!',
   receiptFooter: 'Please visit again. For support: +880 1700 000000',
   language: 'en',
-  theme: 'dark',
+  theme: 'light',
   autoBackup: true,
   paymentSettings: {
     localPaymentEnabled: true,
@@ -633,7 +633,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [theme, setThemeState] = useState<ThemeMode>(() => {
     const saved = localStorage.getItem('biz_theme');
-    return (saved as ThemeMode) || 'dark';
+    return (saved as ThemeMode) || 'light';
   });
 
   // Dashboard Preferences

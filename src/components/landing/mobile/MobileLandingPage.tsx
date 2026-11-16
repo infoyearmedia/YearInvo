@@ -357,7 +357,7 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
   ];
 
   return (
-    <div className="w-full min-h-screen bg-slate-50 dark:bg-[#09090b] text-slate-900 dark:text-slate-100 font-sans relative overflow-x-hidden pb-12 selection:bg-indigo-500 selection:text-white">
+    <div className="w-full min-h-screen bg-slate-50 dark:bg-[#09090b] text-slate-900 dark:text-slate-100 font-sans relative overflow-x-clip pb-12 selection:bg-indigo-500 selection:text-white">
       
       {/* ========================================================= */}
       {/* 1. NEW CLEAN MOBILE HEADER                                 */}
