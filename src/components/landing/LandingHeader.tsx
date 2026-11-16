@@ -64,10 +64,10 @@ export const LandingHeader: React.FC<LandingHeaderProps> = ({
           />
           <div className="flex flex-col">
             <div className="flex items-center gap-1.5">
-              <span className="font-black text-base sm:text-lg text-slate-900 dark:text-white tracking-tight leading-tight group-hover:text-[#ff5c01] transition-colors">
+              <span className="font-black text-base sm:text-lg text-slate-900 dark:text-white tracking-tight leading-tight group-hover:text-indigo-600 transition-colors">
                 {settings.siteBrandName || 'YearInvo'}
               </span>
-              <span className="text-[9px] sm:text-[10px] bg-purple-500/10 dark:bg-[#ff5c01]/20 border border-purple-500/20 dark:border-[#ff5c01]/40 text-purple-700 dark:text-[#ff8038] font-extrabold uppercase px-1.5 py-0.5 rounded-md">
+              <span className="text-[9px] sm:text-[10px] bg-indigo-500/10 dark:bg-indigo-500/20 border border-indigo-500/20 dark:border-indigo-500/40 text-indigo-700 dark:text-indigo-300 font-extrabold uppercase px-1.5 py-0.5 rounded-md">
                 {settings.siteSubBrandName !== undefined ? settings.siteSubBrandName : 'by Year Media'}
               </span>
             </div>
@@ -84,7 +84,7 @@ export const LandingHeader: React.FC<LandingHeaderProps> = ({
                 onClick={() => handleNavClick(item.id)}
                 className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                   isActive
-                    ? 'bg-purple-500/10 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-500/20'
+                    ? 'bg-indigo-500/10 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-500/20'
                     : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
                 }`}
               >
@@ -102,7 +102,7 @@ export const LandingHeader: React.FC<LandingHeaderProps> = ({
             <select
               value={settings.currency || '৳'}
               onChange={(e) => updateSettings({ currency: e.target.value })}
-              className="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200 text-[10px] sm:text-xs font-extrabold py-1.5 px-2 rounded-xl border border-slate-200 dark:border-slate-800 focus:outline-none focus:border-purple-500 cursor-pointer shadow-2xs"
+              className="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200 text-[10px] sm:text-xs font-extrabold py-1.5 px-2 rounded-xl border border-slate-200 dark:border-slate-800 focus:outline-none focus:border-indigo-500 cursor-pointer shadow-2xs"
               title="Select Store Currency"
             >
               <option value="৳">৳ BDT</option>
@@ -137,14 +137,14 @@ export const LandingHeader: React.FC<LandingHeaderProps> = ({
           <div className="hidden sm:flex items-center gap-2 ml-1">
             <button
               onClick={onOpenLogin}
-              className="px-3.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl transition-all cursor-pointer"
+              className="px-3.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all cursor-pointer"
             >
               {t('landing.signIn') || t('login')}
             </button>
 
             <button
               onClick={onOpenSignup}
-              className="px-4 py-1.5 text-xs font-black text-white bg-[#ff5c01] hover:bg-[#e05100] rounded-xl shadow-md shadow-[#ff5c01]/25 transition-all cursor-pointer flex items-center gap-1.5"
+              className="px-4 py-1.5 text-xs font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md shadow-indigo-600/25 transition-all cursor-pointer flex items-center gap-1.5"
             >
               <Sparkles className="w-3.5 h-3.5" />
               <span>{t('landing.getStarted') || t('signUp')}</span>
@@ -157,7 +157,7 @@ export const LandingHeader: React.FC<LandingHeaderProps> = ({
             className="p-1.5 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 lg:hidden cursor-pointer"
             title="Toggle Menu"
           >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5 text-[#ff5c01]" />}
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5 text-indigo-600" />}
           </button>
         </div>
       </div>
@@ -172,7 +172,7 @@ export const LandingHeader: React.FC<LandingHeaderProps> = ({
                 onClick={() => handleNavClick(item.id)}
                 className={`text-left px-3 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                   activeSection === item.id
-                    ? 'bg-purple-500/10 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 font-extrabold'
+                    ? 'bg-indigo-500/10 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 font-extrabold'
                     : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60'
                 }`}
               >
@@ -196,7 +196,7 @@ export const LandingHeader: React.FC<LandingHeaderProps> = ({
                 onOpenSignup();
                 setMobileMenuOpen(false);
               }}
-              className="flex-1 py-2 text-xs font-black text-white bg-[#ff5c01] rounded-xl text-center shadow-md shadow-[#ff5c01]/20 flex items-center justify-center gap-1"
+              className="flex-1 py-2 text-xs font-black text-white bg-indigo-600 rounded-xl text-center shadow-md shadow-indigo-600/20 flex items-center justify-center gap-1"
             >
               <Sparkles className="w-3.5 h-3.5" />
               <span>{t('landing.getStarted') || t('signUp')}</span>

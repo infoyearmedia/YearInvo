@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { LandingHeader } from './LandingHeader';
 import { LandingHero } from './LandingHero';
 import { LandingFeatures } from './LandingFeatures';
+import { LandingShowcase } from './LandingShowcase';
 import { LandingPricing } from './LandingPricing';
 import { LandingAbout } from './LandingAbout';
 import { LandingSupport } from './LandingSupport';
@@ -28,7 +29,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenLogin, onOpenSig
   };
 
   return (
-    <div className={`min-h-screen ${theme === 'dark' ? 'dark bg-[#09090b] text-slate-100' : 'bg-[#F8FAFC] text-slate-900'} font-sans select-none relative overflow-x-hidden transition-colors`}>
+    <div className={`landing-font min-h-screen ${theme === 'dark' ? 'dark bg-[#09090b] text-slate-100' : 'bg-[#F8FAFC] text-slate-900'} font-sans select-none relative overflow-x-hidden transition-colors`}>
       
       {/* ========================================================= */}
       {/* MOBILE LANDING PAGE (Exclusive for phones < 768px)       */}
@@ -61,21 +62,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenLogin, onOpenSig
           onOpenDemo={onOpenDemo}
         />
 
-        {/* Features Section */}
-        <LandingFeatures
-          onOpenSignup={onOpenSignup}
-        />
+        {/* Features Section — Platform */}
+        <LandingFeatures />
+
+        {/* Solutions + Alternating Features + How It Works */}
+        <LandingShowcase />
+
+        {/* For Owners (dark band) + Mobile App */}
+        <LandingAbout onOpenSignup={onOpenSignup} />
 
         {/* Pricing / Subscription Section */}
         <LandingPricing
           onOpenSignup={onOpenSignup}
         />
 
-        {/* About Section */}
-        <LandingAbout />
-
-        {/* Support & FAQ Section */}
-        <LandingSupport />
+        {/* Support & FAQ Section + Final CTA */}
+        <LandingSupport
+          onOpenSignup={onOpenSignup}
+          onOpenDemo={onOpenDemo}
+        />
 
         {/* Footer Section */}
         <LandingFooter

@@ -3,6 +3,8 @@ import { useApp } from '../../context/AppContext';
 import { LandingPage } from '../landing/LandingPage';
 import { LanguageSelector } from '../common/LanguageSelector';
 import { SUPPORTED_LANGUAGES, getDefaultLanguageForCountry } from '../../i18n/languages';
+import { calculatePlanPricing } from '../../config/pricing';
+import { normalizeCurrencyCode } from '../../services/currencyService';
 import { Language } from '../../types';
 import {
   Lock,
@@ -33,7 +35,7 @@ import {
 } from 'lucide-react';
 
 export const LoginView: React.FC = () => {
-  const { login, signup, sendFirebasePasswordReset, settings, language, setLanguage, t, enterDemoMode } = useApp();
+  const { login, signup, sendFirebasePasswordReset, settings, language, setLanguage, t, enterDemoMode, exchangeRates } = useApp();
 
   const [mode, setMode] = useState<'landing' | 'login' | 'signup' | 'forgot'>('landing');
   const [email, setEmail] = useState('');
@@ -72,6 +74,15 @@ export const LoginView: React.FC = () => {
   const [error, setError] = useState('');
 
   const isBn = language === 'bn';
+
+  // Signup plan prices follow the selected currency — same pricing engine
+  // as the landing pricing section (never a hardcoded ৳ amount).
+  const displayCurrency = settings.currency || '৳';
+  const isBDT = normalizeCurrencyCode(displayCurrency) === 'BDT';
+  const monthlyPlanSub = (plan: 'Pro' | 'Premium') => {
+    const c = calculatePlanPricing(plan, 'monthly', isBDT, displayCurrency, exchangeRates, language);
+    return `${c.currencySymbol}${c.total.toLocaleString(undefined, { maximumFractionDigits: 2 })}/mo`;
+  };
 
   const [authLoading, setAuthLoading] = useState(false);
 
@@ -208,7 +219,7 @@ export const LoginView: React.FC = () => {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="store@example.com"
-                        className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-[#ff5c01]"
+                        className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-600"
                         required
                       />
                     </div>
@@ -227,7 +238,7 @@ export const LoginView: React.FC = () => {
                           setForgotEmail(email);
                           setMode('forgot');
                         }}
-                        className="text-[11px] font-medium text-[#ff8038] hover:underline cursor-pointer"
+                        className="text-[11px] font-medium text-indigo-600 hover:underline cursor-pointer"
                       >
                         {isBn ? 'পাসওয়ার্ড ভুলে গেছেন?' : 'Forgot Password?'}
                       </button>
@@ -239,7 +250,7 @@ export const LoginView: React.FC = () => {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••"
-                        className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl pl-10 pr-10 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-[#ff5c01] focus:ring-2 focus:ring-[#ff5c01]/20 transition-all"
+                        className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl pl-10 pr-10 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition-all"
                         required
                       />
                       <button
@@ -261,7 +272,7 @@ export const LoginView: React.FC = () => {
                   <button
                     type="submit"
                     disabled={authLoading}
-                    className="w-full py-3 bg-[#ff5c01] hover:bg-[#e05100] text-white font-bold rounded-xl text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#ff5c01]/20 mt-2 cursor-pointer disabled:opacity-50"
+                    className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20 mt-2 cursor-pointer disabled:opacity-50"
                   >
                     <span>{authLoading ? (isBn ? 'লগইন হচ্ছে...' : 'Signing In...') : (isBn ? 'স্টোরে প্রবেশ করুন' : 'Sign In to Store')}</span>
                     <ArrowRight className="w-4 h-4" />
@@ -274,7 +285,7 @@ export const LoginView: React.FC = () => {
                       setError('');
                       setMode('signup');
                     }}
-                    className="text-xs font-bold text-[#ff8038] hover:underline"
+                    className="text-xs font-bold text-indigo-600 hover:underline"
                   >
                     Need a new account? Sign Up Here
                   </button>
@@ -293,8 +304,8 @@ export const LoginView: React.FC = () => {
                 </button>
 
                 <div className="text-center mb-6 pr-8">
-                  <div className="w-12 h-12 rounded-2xl bg-[#ff5c01]/10 border border-[#ff5c01]/30 text-[#ff8038] flex items-center justify-center mx-auto mb-3">
-                    <Lock className="w-6 h-6 text-[#ff8038]" />
+                  <div className="w-12 h-12 rounded-2xl bg-indigo-600/10 border border-indigo-600/30 text-indigo-600 flex items-center justify-center mx-auto mb-3">
+                    <Lock className="w-6 h-6 text-indigo-600" />
                   </div>
                   <h2 className="text-2xl font-black text-slate-900 dark:text-white">
                     {isBn ? 'পাসওয়ার্ড রিসেট করুন' : 'Reset Your Password'}
@@ -331,7 +342,7 @@ export const LoginView: React.FC = () => {
                         value={forgotEmail}
                         onChange={(e) => setForgotEmail(e.target.value)}
                         placeholder="you@example.com"
-                        className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-[#ff5c01]"
+                        className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-600"
                         required
                       />
                     </div>
@@ -340,7 +351,7 @@ export const LoginView: React.FC = () => {
                   <button
                     type="submit"
                     disabled={forgotLoading}
-                    className="w-full py-3 bg-[#ff5c01] hover:bg-[#e05100] text-white font-bold rounded-xl text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#ff5c01]/20 mt-2 cursor-pointer disabled:opacity-50"
+                    className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20 mt-2 cursor-pointer disabled:opacity-50"
                   >
                     <span>{forgotLoading ? (isBn ? 'পাঠানো হচ্ছে...' : 'Sending...') : (isBn ? 'রিসেট লিংক পাঠান' : 'Send Password Reset Email')}</span>
                     <ArrowRight className="w-4 h-4" />
@@ -354,7 +365,7 @@ export const LoginView: React.FC = () => {
                       setError('');
                       setMode('login');
                     }}
-                    className="text-xs font-bold text-[#ff8038] hover:underline cursor-pointer"
+                    className="text-xs font-bold text-indigo-600 hover:underline cursor-pointer"
                   >
                     {isBn ? '← লগইন পেজে ফিরে যান' : '← Back to Sign In'}
                   </button>
@@ -378,7 +389,7 @@ export const LoginView: React.FC = () => {
 
                 {/* Top Pill Badge — shows the plan picked on the pricing page */}
                 <div>
-                  <span className="px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950 border border-indigo-200 dark:border-indigo-800/80 text-[#e05100] dark:text-[#ff8038] text-[11px] font-extrabold uppercase tracking-wider inline-block">
+                  <span className="px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950 border border-indigo-200 dark:border-indigo-800/80 text-indigo-600 dark:text-indigo-600 text-[11px] font-extrabold uppercase tracking-wider inline-block">
                     {signupPlan === 'pro'
                       ? 'PRO PLAN'
                       : signupPlan === 'premium'
@@ -396,8 +407,8 @@ export const LoginView: React.FC = () => {
                     {(
                       [
                         { id: 'free', label: isBn ? 'ফ্রি' : 'Free', sub: isBn ? '১ মাস' : '1 Month' },
-                        { id: 'pro', label: 'Pro', sub: '৳100/mo' },
-                        { id: 'premium', label: 'Premium', sub: '৳250/mo' },
+                        { id: 'pro', label: 'Pro', sub: monthlyPlanSub('Pro') },
+                        { id: 'premium', label: 'Premium', sub: monthlyPlanSub('Premium') },
                       ] as const
                     ).map((p) => (
                       <button
@@ -406,7 +417,7 @@ export const LoginView: React.FC = () => {
                         onClick={() => setSignupPlan(p.id)}
                         className={`py-2.5 px-2 rounded-xl border text-center transition-all cursor-pointer ${
                           signupPlan === p.id
-                            ? 'bg-[#ff5c01]/10 border-[#ff5c01] text-slate-900 dark:text-white shadow-xs'
+                            ? 'bg-indigo-600/10 border-indigo-600 text-slate-900 dark:text-white shadow-xs'
                             : 'bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-600'
                         }`}
                       >
@@ -437,7 +448,7 @@ export const LoginView: React.FC = () => {
                           setError('');
                           setMode('login');
                         }}
-                        className="text-xs font-bold text-[#ff8038] hover:underline block"
+                        className="text-xs font-bold text-indigo-600 hover:underline block"
                       >
                         {isBn ? 'লগইন পেজে যান →' : 'Click here to Log In instead →'}
                       </button>
@@ -456,7 +467,7 @@ export const LoginView: React.FC = () => {
                       value={yourName}
                       onChange={(e) => setYourName(e.target.value)}
                       placeholder="e.g. John Doe"
-                      className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-[#ff5c01] focus:ring-2 focus:ring-[#ff5c01]/20 transition-all font-medium"
+                      className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium"
                       required
                     />
                   </div>
@@ -472,7 +483,7 @@ export const LoginView: React.FC = () => {
                         value={storeName}
                         onChange={(e) => setStoreName(e.target.value)}
                         placeholder="e.g. Downtown Mart"
-                        className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-[#ff5c01] focus:ring-2 focus:ring-[#ff5c01]/20 transition-all font-medium"
+                        className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium"
                         required
                       />
                     </div>
@@ -484,7 +495,7 @@ export const LoginView: React.FC = () => {
                       <select
                         value={storeType}
                         onChange={(e) => setStoreType(e.target.value)}
-                        className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-[#ff5c01] focus:ring-2 focus:ring-[#ff5c01]/20 transition-all font-medium cursor-pointer"
+                        className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium cursor-pointer"
                         required
                       >
                         <option value="" disabled>Select store type</option>
@@ -512,7 +523,7 @@ export const LoginView: React.FC = () => {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="you@example.com"
-                        className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-[#ff5c01] focus:ring-2 focus:ring-[#ff5c01]/20 transition-all font-medium"
+                        className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium"
                         required
                       />
                     </div>
@@ -527,7 +538,7 @@ export const LoginView: React.FC = () => {
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           placeholder="Min. 6 characters"
-                          className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl pl-3.5 pr-10 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-[#ff5c01] focus:ring-2 focus:ring-[#ff5c01]/20 transition-all font-medium"
+                          className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl pl-3.5 pr-10 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium"
                           required
                         />
                         <button
@@ -558,7 +569,7 @@ export const LoginView: React.FC = () => {
                         value={storePhone}
                         onChange={(e) => setStorePhone(e.target.value)}
                         placeholder="+880 1XXX-XXXXXX"
-                        className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-[#ff5c01] focus:ring-2 focus:ring-[#ff5c01]/20 transition-all font-medium"
+                        className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium"
                         required
                       />
                     </div>
@@ -572,7 +583,7 @@ export const LoginView: React.FC = () => {
                         value={storeAddress}
                         onChange={(e) => setStoreAddress(e.target.value)}
                         placeholder="123 Commercial Ave, City"
-                        className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-[#ff5c01] focus:ring-2 focus:ring-[#ff5c01]/20 transition-all font-medium"
+                        className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium"
                         required
                       />
                     </div>
@@ -587,7 +598,7 @@ export const LoginView: React.FC = () => {
                       <select
                         value={signupCountry}
                         onChange={(e) => handleCountryChange(e.target.value)}
-                        className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-[#ff5c01] focus:ring-2 focus:ring-[#ff5c01]/20 transition-all font-medium cursor-pointer"
+                        className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium cursor-pointer"
                         required
                       >
                         <option value="Bangladesh">🇧🇩 Bangladesh</option>
@@ -615,7 +626,7 @@ export const LoginView: React.FC = () => {
                           setSignupLanguage(l);
                           setLanguage(l);
                         }}
-                        className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-[#ff5c01] focus:ring-2 focus:ring-[#ff5c01]/20 transition-all font-medium cursor-pointer"
+                        className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium cursor-pointer"
                         required
                       >
                         {SUPPORTED_LANGUAGES.map((lang) => (
@@ -637,7 +648,7 @@ export const LoginView: React.FC = () => {
                       value={affiliateCode}
                       onChange={(e) => setAffiliateCode(e.target.value)}
                       placeholder="e.g. MAZBI123"
-                      className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-[#ff5c01] focus:ring-2 focus:ring-[#ff5c01]/20 transition-all font-medium"
+                      className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium"
                     />
                     {affiliateCode.trim().length > 0 && (
                       <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-1 flex items-center gap-1">
@@ -652,7 +663,7 @@ export const LoginView: React.FC = () => {
                     <button
                       type="submit"
                       disabled={authLoading}
-                      className="w-full py-3.5 bg-[#ff5c01] hover:bg-[#e05100] text-white font-black rounded-2xl text-sm transition-all text-center shadow-lg shadow-[#ff5c01]/25 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+                      className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl text-sm transition-all text-center shadow-lg shadow-indigo-600/25 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                       <span>{authLoading ? (isBn ? 'স্টোর তৈরি হচ্ছে...' : 'Creating Account...') : (isBn ? 'নতুন দোকান তৈরি করুন' : 'Create Your Store & Access Dashboard')}</span>
                       <ArrowRight className="w-4 h-4" />
@@ -666,7 +677,7 @@ export const LoginView: React.FC = () => {
                         setError('');
                         setMode('login');
                       }}
-                      className="text-xs font-bold text-[#ff5c01] hover:underline cursor-pointer"
+                      className="text-xs font-bold text-indigo-600 hover:underline cursor-pointer"
                     >
                       Already registered? Log In to existing account
                     </button>

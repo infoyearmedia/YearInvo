@@ -15,7 +15,12 @@ import {
   CreditCard,
 } from 'lucide-react';
 
-export const LandingSupport: React.FC = () => {
+interface LandingSupportProps {
+  onOpenSignup: (plan?: 'free' | 'pro' | 'premium') => void;
+  onOpenDemo: () => void;
+}
+
+export const LandingSupport: React.FC<LandingSupportProps> = ({ onOpenSignup, onOpenDemo }) => {
   const { language } = useApp();
   const isBn = language === 'bn';
 
@@ -114,10 +119,34 @@ export const LandingSupport: React.FC = () => {
         ? 'ট্রায়াল শেষ হলে আপনার স্টোরের ডাটা নিরাপদে সংরক্ষিত থাকবে। চালিয়ে যেতে Pro বা Premium প্ল্যানে আপগ্রেড করতে হবে।'
         : 'After the trial ends, your store data stays safely stored. To keep using the full features, upgrade to a Pro or Premium plan.',
     },
+    {
+      q: isBn ? 'শুরু করতে কি বিশেষ হার্ডওয়্যার লাগবে?' : 'Do I need any special hardware to start?',
+      a: isBn
+        ? 'না। যেকোনো মোবাইল, ল্যাপটপ বা পিসি থেকেই YearInvo চলে। থার্মাল প্রিন্টার বা বারকোড স্ক্যানার থাকলে আরও সুবিধা, তবে বাধ্যতামূলক নয়।'
+        : 'No. YearInvo runs on any phone, laptop, or PC. A thermal printer or barcode scanner is handy but not required.',
+    },
+    {
+      q: isBn ? 'ইন্টারনেট ছাড়া কি বিক্রি করা যাবে?' : 'Can I sell without the internet?',
+      a: isBn
+        ? 'হ্যাঁ, লোকাল স্টোরেজ ক্যাশ থাকার কারণে বিক্রি স্বাভাবিক থাকবে এবং ইন্টারনেট ফিরে এলে ডাটা অটোম্যাটিক ক্লাউডে সিঙ্ক হয়ে যাবে।'
+        : 'Yes. A local cache keeps sales running offline, and everything syncs to the cloud automatically once you are back online.',
+    },
+    {
+      q: isBn ? 'থার্মাল রসিদ কীভাবে প্রিন্ট করব?' : 'How do I print a thermal receipt?',
+      a: isBn
+        ? 'POS থেকে বিল সম্পন্ন করে Thermal Print বোতামে চাপ দিন। আপনার থার্মাল প্রিন্টারটি ফোন বা পিসির সাথে কানেক্ট থাকতে হবে।'
+        : 'Finish the bill in POS and tap Thermal Print. Your thermal printer just needs to be connected to your phone or PC.',
+    },
+    {
+      q: isBn ? 'আমার স্টাফরা কি একই দোকান ব্যবহার করতে পারবে?' : 'Can my staff use the same store?',
+      a: isBn
+        ? 'হ্যাঁ, Pro ও Premium প্ল্যানে মাল্টি-স্টাফ রোল আছে। প্রত্যেক স্টাফ নিজের লগইন পাবে, আর কে কী দেখবে তা আপনি ঠিক করে দিতে পারবেন।'
+        : 'Yes. Pro and Premium include multi-staff roles — each staff member gets their own login, and you control what they can see and do.',
+    },
   ];
 
   return (
-    <section id="support" className="py-12 sm:py-20 bg-white dark:bg-[#09090b] transition-colors">
+    <section id="support" className="py-20 sm:py-24 bg-white dark:bg-[#09090b] transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
         
         {/* Section Title Header */}
@@ -128,10 +157,10 @@ export const LandingSupport: React.FC = () => {
           transition={{ duration: 0.5 }}
           className="text-center space-y-3 max-w-3xl mx-auto"
         >
-          <span className="px-3 py-1 rounded-full bg-purple-500/10 text-purple-700 dark:bg-purple-950/60 dark:text-[#ff8038] text-xs font-black uppercase tracking-wider border border-purple-500/20">
+          <span className="inline-block text-xs font-bold uppercase tracking-[0.18em] text-indigo-600 dark:text-indigo-400">
             {isBn ? 'সাহায্য ও কাস্টমার সাপোর্ট' : 'HELP CENTER & SUPPORT'}
           </span>
-          <h2 className="text-2xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
+          <h2 className="text-3xl sm:text-[40px] font-extrabold text-slate-900 dark:text-white tracking-tight leading-tight">
             {isBn
               ? 'আমরা আপনাকে ২৪/৭ সাহায্য করতে প্রস্তুত'
               : 'We Are Here to Help You Succeed'}
@@ -155,9 +184,9 @@ export const LandingSupport: React.FC = () => {
                 viewport={{ once: true, margin: '-20px' }}
                 transition={{ duration: 0.4, delay: i * 0.08 }}
                 whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                className="bg-slate-50 dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 space-y-2 hover:border-purple-500/40 transition-colors cursor-pointer"
+                className="bg-slate-50 dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 space-y-2 hover:border-indigo-500/40 transition-colors cursor-pointer"
               >
-                <div className="w-10 h-10 rounded-xl bg-[#ff5c01]/10 text-[#ff5c01] dark:text-[#ff8038] flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400 flex items-center justify-center">
                   <Icon className="w-5 h-5" />
                 </div>
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white">{topic.title}</h3>
@@ -173,7 +202,7 @@ export const LandingSupport: React.FC = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-40px' }}
           transition={{ duration: 0.5 }}
-          className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6"
+          className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 max-w-3xl mx-auto"
         >
           <div className="text-center sm:text-left space-y-1">
             <h3 className="text-xl font-black text-slate-900 dark:text-white">
@@ -199,7 +228,7 @@ export const LandingSupport: React.FC = () => {
                     <span>{faq.q}</span>
                     <ChevronDown
                       className={`w-4 h-4 text-slate-400 transition-transform ${
-                        isOpen ? 'rotate-180 text-purple-600 dark:text-purple-400' : ''
+                        isOpen ? 'rotate-180 text-indigo-600 dark:text-indigo-400' : ''
                       }`}
                     />
                   </button>
@@ -262,7 +291,7 @@ export const LandingSupport: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
-                <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
                   <Phone className="w-5 h-5" />
                 </div>
                 <div>
@@ -275,7 +304,7 @@ export const LandingSupport: React.FC = () => {
               {/* Live Chat (Coming Soon) Badge */}
               <div className="flex items-center justify-between p-3.5 rounded-2xl bg-gradient-to-r from-purple-950/40 via-slate-950 to-slate-950 border border-purple-800/40 text-white">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#ff5c01]/20 text-[#ff8038] flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-300 flex items-center justify-center shrink-0">
                     <MessageSquare className="w-5 h-5" />
                   </div>
                   <div>
@@ -322,7 +351,7 @@ export const LandingSupport: React.FC = () => {
                     value={formName}
                     onChange={(e) => setFormName(e.target.value)}
                     placeholder="e.g. Tanvir Ahmed"
-                    className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-purple-500 transition-colors"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors"
                     required
                   />
                 </div>
@@ -337,7 +366,7 @@ export const LandingSupport: React.FC = () => {
                       value={formEmail}
                       onChange={(e) => setFormEmail(e.target.value)}
                       placeholder="you@example.com"
-                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-purple-500 transition-colors"
+                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors"
                       required
                     />
                   </div>
@@ -351,7 +380,7 @@ export const LandingSupport: React.FC = () => {
                       value={formStore}
                       onChange={(e) => setFormStore(e.target.value)}
                       placeholder="e.g. Apex Mart"
-                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-purple-500 transition-colors"
+                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors"
                     />
                   </div>
                 </div>
@@ -365,7 +394,7 @@ export const LandingSupport: React.FC = () => {
                     value={formMsg}
                     onChange={(e) => setFormMsg(e.target.value)}
                     placeholder="Describe your question or store requirement..."
-                    className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-purple-500 transition-colors"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors"
                     required
                   />
                 </div>
@@ -374,7 +403,7 @@ export const LandingSupport: React.FC = () => {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   type="submit"
-                  className="w-full py-3 bg-[#ff5c01] hover:bg-[#e05100] text-white font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-[#ff5c01]/20"
+                  className="w-full py-3 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-indigo-600/25"
                 >
                   <Send className="w-3.5 h-3.5" />
                   <span>{isBn ? 'মেসেজ পাঠান' : 'Send Message'}</span>
@@ -384,6 +413,47 @@ export const LandingSupport: React.FC = () => {
           </motion.div>
 
         </div>
+
+        {/* FINAL CTA — indigo → violet gradient panel */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-40px' }}
+          transition={{ duration: 0.5 }}
+          className="relative overflow-hidden rounded-[28px] bg-gradient-to-r from-indigo-600 via-indigo-500 to-violet-600 px-6 py-12 sm:p-14 text-center space-y-5 shadow-2xl shadow-indigo-600/25"
+        >
+          <div className="absolute inset-0 opacity-20 pointer-events-none"
+            style={{ backgroundImage: 'linear-gradient(to right, rgba(255,255,255,0.35) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.35) 1px, transparent 1px)', backgroundSize: '44px 44px' }}
+          />
+          <div className="relative space-y-3 max-w-2xl mx-auto">
+            <h2 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
+              {isBn ? 'আজই আপনার দোকান ডিজিটাল করুন' : 'Take your store digital today'}
+            </h2>
+            <p className="text-sm sm:text-base text-indigo-100 leading-relaxed">
+              {isBn
+                ? '১ মাসের ফ্রি ট্রায়াল দিয়ে শুরু করুন। কোনো ক্রেডিট কার্ড লাগে না, সেটআপে লাগে মাত্র ২ মিনিট।'
+                : 'Start with a 1 month free trial. No credit card needed, and setup takes about 2 minutes.'}
+            </p>
+          </div>
+          <div className="relative flex flex-wrap items-center justify-center gap-3 pt-1">
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => onOpenSignup('free')}
+              className="px-6 py-3.5 bg-white hover:bg-slate-100 text-slate-900 font-bold rounded-xl text-sm transition-all shadow-lg cursor-pointer"
+            >
+              {isBn ? 'ফ্রি শুরু করুন' : 'Get Started Free'}
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={onOpenDemo}
+              className="px-6 py-3.5 bg-white/10 hover:bg-white/20 border border-white/30 text-white font-bold rounded-xl text-sm transition-all cursor-pointer"
+            >
+              {isBn ? 'লাইভ ডেমো দেখুন' : 'Explore Live Demo'}
+            </motion.button>
+          </div>
+        </motion.div>
 
       </div>
     </section>

@@ -132,7 +132,7 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
         ? 'মাত্র ৩ ক্লিকে ক্যাশ, কার্ড বা মোবাইল ব্যাংকিংয়ে সেল সম্পন্ন করুন। দ্রুততম ডিজিটাল কাস্টমার রসিদ।'
         : 'Process cash, card, or mobile wallet sales in 3 clicks with digital receipt generation.',
       icon: Zap,
-      gradient: 'from-[#ff5c01] to-amber-500',
+      gradient: 'from-indigo-500 to-violet-500',
       badge: isBn ? 'ইনস্ট্যান্ট' : 'Instant',
     },
     {
@@ -198,7 +198,7 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
         ? 'স্মার্টফোন থেকে এক হাতেই পুরো দোকান পরিচালনা ও ক্লাউড সিঙ্ক।'
         : 'Optimized touch interface designed for mobile phones on the go.',
       icon: Smartphone,
-      gradient: 'from-[#ff5c01] to-rose-500',
+      gradient: 'from-violet-500 to-indigo-500',
       badge: 'Mobile Optimized',
     },
   ];
@@ -357,7 +357,7 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
   ];
 
   return (
-    <div className="w-full min-h-screen bg-slate-50 dark:bg-[#09090b] text-slate-900 dark:text-slate-100 font-sans relative overflow-x-hidden pb-12 selection:bg-purple-500 selection:text-white">
+    <div className="w-full min-h-screen bg-slate-50 dark:bg-[#09090b] text-slate-900 dark:text-slate-100 font-sans relative overflow-x-hidden pb-12 selection:bg-indigo-500 selection:text-white">
       
       {/* ========================================================= */}
       {/* 1. NEW CLEAN MOBILE HEADER                                 */}
@@ -380,7 +380,7 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
               <span className="font-black text-sm text-slate-900 dark:text-white tracking-tight leading-none">
                 {settings.siteBrandName || 'YearInvo'}
               </span>
-              <span className="text-[8px] font-extrabold px-1 py-0.2 rounded bg-purple-500/10 dark:bg-[#ff5c01]/20 text-purple-700 dark:text-[#ff8038] border border-purple-500/20">
+              <span className="text-[8px] font-extrabold px-1 py-0.2 rounded bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-400 border border-indigo-500/20">
                 POS
               </span>
             </div>
@@ -405,7 +405,7 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
           {/* Profile / Login Quick Icon */}
           <button
             onClick={onOpenLogin}
-            className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-700 dark:text-[#ff8038] border border-purple-500/20 flex items-center justify-center font-bold active:scale-90 transition-transform cursor-pointer"
+            className="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-500/20 flex items-center justify-center font-bold active:scale-90 transition-transform cursor-pointer"
             title="Login to Store"
           >
             <User className="w-4 h-4" />
@@ -414,7 +414,7 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
           {/* Menu Icon (☰) */}
           <button
             onClick={() => setDrawerOpen(true)}
-            className="w-9 h-9 rounded-xl bg-[#ff5c01] text-white flex items-center justify-center active:scale-90 transition-transform shadow-md shadow-[#ff5c01]/30 cursor-pointer"
+            className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center active:scale-90 transition-transform shadow-md shadow-indigo-600/30 cursor-pointer"
             title="Open Menu"
           >
             <Menu className="w-5 h-5" />
@@ -526,12 +526,12 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
                         onClick={() => scrollToSection(item.id)}
                         className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                           activeSection === item.id
-                            ? 'bg-purple-500/10 text-purple-700 dark:bg-purple-950/60 dark:text-[#ff8038] border border-purple-500/20'
+                            ? 'bg-indigo-500/10 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-400 border border-indigo-500/20'
                             : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900'
                         }`}
                       >
                         <div className="flex items-center gap-2.5">
-                          <Icon className="w-4 h-4 text-purple-500" />
+                          <Icon className="w-4 h-4 text-indigo-500" />
                           <span>{item.label}</span>
                         </div>
                         <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
@@ -601,7 +601,7 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
 
                     <button
                       onClick={toggleTheme}
-                      className="px-3 py-1 rounded-lg bg-[#ff5c01] text-white text-[10px] font-black uppercase cursor-pointer"
+                      className="px-3 py-1 rounded-lg bg-indigo-600 text-white text-[10px] font-black uppercase cursor-pointer"
                     >
                       {theme === 'light' ? 'Switch Dark' : 'Switch Light'}
                     </button>
@@ -629,7 +629,7 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
                     setDrawerOpen(false);
                     onOpenSignup();
                   }}
-                  className="w-full py-3.5 rounded-2xl bg-[#ff5c01] text-white font-black text-xs shadow-lg shadow-[#ff5c01]/30 flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-3.5 rounded-2xl bg-indigo-600 text-white font-black text-xs shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <Sparkles className="w-4 h-4 text-amber-300 fill-amber-300" />
                   <span>{isBn ? 'ফ্রি স্টোর তৈরি করুন' : 'Create Free Account'}</span>
@@ -647,10 +647,10 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
       <section id="mobile-home" className="pt-6 pb-10 px-4 space-y-6 relative overflow-hidden">
         
         {/* Background Subtle Gradient Blobs */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-72 bg-gradient-to-b from-purple-500/15 via-indigo-500/5 to-transparent blur-2xl pointer-events-none -z-10 rounded-full" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-72 bg-gradient-to-b from-indigo-500/15 via-violet-500/5 to-transparent blur-2xl pointer-events-none -z-10 rounded-full" />
 
         {/* Top Highlight Badge */}
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/10 text-purple-700 dark:text-[#ff8038] text-[10px] font-black border border-purple-500/20 shadow-2xs">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 text-[10px] font-black border border-indigo-500/20 shadow-2xs">
           <Zap className="w-3 h-3 text-amber-500 fill-amber-500 animate-pulse shrink-0" />
           <span>{isBn ? '১ মাসের ফ্রি ট্রায়াল • ক্লাউড ইনভেন্টরি' : '1 MONTH FREE TRIAL • CLOUD POS'}</span>
         </div>
@@ -662,7 +662,7 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping inline-block" />
               Live POS Cash Terminal
             </span>
-            <span className="text-purple-600 dark:text-purple-400 font-extrabold">{money(2450)}</span>
+            <span className="text-indigo-600 dark:text-indigo-400 font-extrabold">{money(2450)}</span>
           </div>
 
           <div className="grid grid-cols-2 gap-2 text-[10px] font-extrabold">
@@ -673,7 +673,7 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
 
             <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
               <span className="text-slate-400 uppercase text-[8px] block">Net Profit</span>
-              <span className="text-purple-600 dark:text-[#ff8038] text-xs">{money(9350)}</span>
+              <span className="text-indigo-600 dark:text-indigo-400 text-xs">{money(9350)}</span>
             </div>
           </div>
         </div>
@@ -684,14 +684,14 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
             {isBn ? (
               <>
                 আধুনিক খুচরা দোকানের <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#ff5c01] to-indigo-500">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600">
                   স্মার্ট POS ও ইনভেন্টরি
                 </span>
               </>
             ) : (
               <>
                 Modern Retail POS &amp; <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#ff5c01] to-indigo-500">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600">
                   Smart Inventory
                 </span>
               </>
@@ -710,7 +710,7 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
           <motion.button
             whileTap={{ scale: 0.97 }}
             onClick={onOpenSignup}
-            className="w-full py-3.5 bg-[#ff5c01] hover:bg-[#e05100] text-white font-black rounded-2xl text-xs shadow-lg shadow-[#ff5c01]/30 flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl text-xs shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 cursor-pointer"
           >
             <Sparkles className="w-4 h-4 text-amber-300 fill-amber-300" />
             <span>{isBn ? 'ফ্রি স্টোর তৈরি করুন' : 'Create Free Account'}</span>
@@ -735,7 +735,7 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
           </div>
 
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-center">
-            <p className="text-base font-black text-purple-600 dark:text-[#ff8038]">100</p>
+            <p className="text-base font-black text-indigo-600 dark:text-indigo-400">100</p>
             <p className="text-[9px] font-bold text-slate-400 uppercase">{isBn ? 'ফ্রি প্রোডাক্ট' : 'Free Products'}</p>
           </div>
 
@@ -745,6 +745,13 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
           </div>
         </div>
 
+        {/* Works with your hardware */}
+        <p className="text-center text-[10px] font-bold text-slate-400 pt-1">
+          {isBn
+            ? 'চলে যার সাথে: থার্মাল প্রিন্টার • A4 • বারকোড স্ক্যানার • লেবেল প্রিন্টার'
+            : 'Works with: Thermal printers • A4 • Barcode scanners • Label printers'}
+        </p>
+
       </section>
 
       {/* ========================================================= */}
@@ -753,7 +760,7 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
       <section id="mobile-features" className="py-8 px-4 bg-slate-100/70 dark:bg-slate-950/80 border-y border-slate-200 dark:border-slate-800/80 space-y-5">
         
         <div className="space-y-1 text-center">
-          <span className="px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-700 dark:text-[#ff8038] text-[10px] font-black uppercase tracking-wider border border-purple-500/20">
+          <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 text-[10px] font-black uppercase tracking-wider border border-indigo-500/20">
             {isBn ? 'স্মার্ট ফিচারসমূহ' : 'MOBILE FEATURES'}
           </span>
           <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
@@ -804,7 +811,7 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
       <section id="mobile-pricing" className="py-8 px-4 space-y-5">
         
         <div className="space-y-2 text-center">
-          <span className="px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-700 dark:text-[#ff8038] text-[10px] font-black uppercase tracking-wider border border-purple-500/20">
+          <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 text-[10px] font-black uppercase tracking-wider border border-indigo-500/20">
             {isBn ? 'প্রাইসিং প্ল্যান' : 'PRICING TIERS'}
           </span>
           <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
@@ -827,7 +834,7 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
               onClick={() => setBillingCycle('yearly')}
               className={`px-2.5 py-1 font-black rounded-lg cursor-pointer flex items-center gap-1 ${
                 billingCycle === 'yearly'
-                  ? 'bg-[#ff5c01] text-white'
+                  ? 'bg-indigo-600 text-white'
                   : 'text-slate-600 dark:text-slate-400'
               }`}
             >
@@ -868,7 +875,7 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
             onClick={() => setSelectedPlanTab('pro')}
             className={`py-2 rounded-xl transition-all cursor-pointer text-center relative ${
               selectedPlanTab === 'pro'
-                ? 'bg-[#ff5c01] text-white shadow-xs'
+                ? 'bg-indigo-600 text-white shadow-xs'
                 : 'text-slate-600 dark:text-slate-400'
             }`}
           >
@@ -898,12 +905,12 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.25 }}
                 className={`bg-white dark:bg-slate-900 rounded-3xl p-5 border-2 ${
-                  plan.popular ? 'border-[#ff5c01] shadow-xl' : 'border-slate-200 dark:border-slate-800'
+                  plan.popular ? 'border-indigo-600 shadow-xl' : 'border-slate-200 dark:border-slate-800'
                 } space-y-4`}
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-[10px] font-black uppercase text-[#ff5c01] dark:text-[#ff8038] block">
+                    <span className="text-[10px] font-black uppercase text-indigo-600 dark:text-indigo-400 block">
                       {plan.badge}
                     </span>
                     <h3 className="text-lg font-black text-slate-900 dark:text-white">{plan.name}</h3>
@@ -915,7 +922,7 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
                     </span>
                     <span className="text-[10px] font-bold text-slate-400 block">{pricingInfo.note}</span>
                     {pricingInfo.subtext && (
-                      <span className="text-[9px] font-extrabold text-purple-600 dark:text-purple-400 block mt-0.5">
+                      <span className="text-[9px] font-extrabold text-indigo-600 dark:text-indigo-400 block mt-0.5">
                         {pricingInfo.subtext}
                       </span>
                     )}
@@ -939,7 +946,7 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
                 onClick={() => onOpenSignup(plan.id as 'free' | 'pro' | 'premium')}
                 className={`w-full py-3.5 rounded-2xl font-black text-xs transition-all flex items-center justify-center gap-2 cursor-pointer ${
                   plan.popular
-                    ? 'bg-[#ff5c01] text-white shadow-lg shadow-[#ff5c01]/30'
+                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
                     : 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
                 }`}
               >
@@ -957,7 +964,7 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
       {/* ========================================================= */}
       <section id="mobile-about" className="py-8 px-4 bg-slate-100/70 dark:bg-slate-950/80 border-y border-slate-200 dark:border-slate-800/80 space-y-4">
         <div className="space-y-1">
-          <span className="px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-700 dark:text-[#ff8038] text-[10px] font-black uppercase tracking-wider border border-purple-500/20">
+          <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 text-[10px] font-black uppercase tracking-wider border border-indigo-500/20">
             {isBn ? 'পরিচিতি' : 'ABOUT US'}
           </span>
           <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
@@ -972,7 +979,7 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
 
         <div className="grid grid-cols-2 gap-2 text-xs">
           <div className="bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1">
-            <Lock className="w-4 h-4 text-purple-500" />
+            <Lock className="w-4 h-4 text-indigo-500" />
             <h4 className="font-bold text-slate-900 dark:text-white">Cloud Encrypted</h4>
             <p className="text-[10px] text-slate-400">Firebase Powered</p>
           </div>
@@ -991,7 +998,7 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
       <section id="mobile-support" className="py-8 px-4 space-y-5">
         
         <div className="space-y-1">
-          <span className="px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-700 dark:text-[#ff8038] text-[10px] font-black uppercase tracking-wider border border-purple-500/20">
+          <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 text-[10px] font-black uppercase tracking-wider border border-indigo-500/20">
             {isBn ? 'সাহায্য কেন্দ্র' : 'HELP & FAQ'}
           </span>
           <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
@@ -1061,7 +1068,7 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
               />
               <button
                 type="submit"
-                className="w-full py-2.5 bg-[#ff5c01] text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                className="w-full py-2.5 bg-indigo-600 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <Send className="w-3.5 h-3.5" />
                 <span>Send Message</span>

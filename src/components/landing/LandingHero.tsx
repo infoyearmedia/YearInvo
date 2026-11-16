@@ -3,17 +3,13 @@ import { motion } from 'motion/react';
 import { useApp } from '../../context/AppContext';
 import { RetailInventoryAnimation } from './RetailInventoryAnimation';
 import {
-  Zap,
   ArrowRight,
   ShieldCheck,
   Sparkles,
-  CheckCircle2,
-  TrendingUp,
-  Package,
   Printer,
+  ScanBarcode,
+  FileText,
   Smartphone,
-  Layers,
-  Lock,
 } from 'lucide-react';
 
 interface LandingHeroProps {
@@ -26,232 +22,155 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onOpenSignup, onOpenDe
   const { language } = useApp();
   const isBn = language === 'bn';
 
+  // Hardware YearInvo genuinely works with — thermal + A4 printing, barcode
+  // scanners, label printers, and any phone or PC (no special device needed).
+  const hardwareItems = isBn
+    ? ['থার্মাল প্রিন্টার', 'A4 প্রিন্ট', 'বারকোড স্ক্যানার', 'লেবেল প্রিন্টার', 'যেকোনো ফোন বা পিসি']
+    : ['Thermal printers', 'A4 printing', 'Barcode scanners', 'Label printers', 'Any phone or PC'];
+
   return (
-    <section id="home" className="relative pt-4 sm:pt-10 pb-12 sm:pb-20 overflow-hidden">
-      {/* Background Animated Gradient Blobs */}
-      <motion.div
-        animate={{
-          y: [0, -20, 0],
-          scale: [1, 1.05, 1],
-          opacity: [0.3, 0.5, 0.3],
-        }}
-        transition={{
-          duration: 9,
-          repeat: Infinity,
-          ease: 'easeInOut',
-        }}
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[520px] bg-gradient-to-b from-[#ff5c01]/15 via-indigo-500/10 to-transparent blur-3xl pointer-events-none -z-10 rounded-full"
-      />
+    <>
+      <section id="home" className="relative hero-grid-bg overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 sm:pt-20 pb-16 sm:pb-24">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
 
-      <motion.div
-        animate={{
-          x: [0, 20, 0],
-          y: [0, 15, 0],
-        }}
-        transition={{
-          duration: 11,
-          repeat: Infinity,
-          ease: 'easeInOut',
-        }}
-        className="absolute top-20 right-[5%] w-72 h-72 bg-[#ff5c01]/10 blur-3xl pointer-events-none -z-10 rounded-full"
-      />
+            {/* LEFT: headline, subtext, CTAs */}
+            <div className="lg:col-span-6 space-y-6 text-center lg:text-left">
 
-      <motion.div
-        animate={{
-          x: [0, -20, 0],
-          y: [0, -15, 0],
-        }}
-        transition={{
-          duration: 12,
-          repeat: Infinity,
-          ease: 'easeInOut',
-        }}
-        className="absolute top-40 left-[5%] w-80 h-80 bg-indigo-500/10 blur-3xl pointer-events-none -z-10 rounded-full"
-      />
+              {/* Badge pill — dark translucent, green "New" chip */}
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/15 text-xs font-semibold text-slate-200"
+              >
+                <span className="px-1.5 py-0.5 rounded-full bg-emerald-500 text-white text-[10px] font-bold leading-none">
+                  {isBn ? 'নতুন' : 'New'}
+                </span>
+                <span>
+                  {isBn ? '১ মাসের ফ্রি ট্রায়াল' : '1 MONTH FREE TRIAL'}
+                </span>
+              </motion.div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 sm:space-y-16">
-        
-        {/* ========================================================= */}
-        {/* 2-COLUMN MAIN HERO: LEFT (HEADLINE & CTAS) + RIGHT (ANIMATION) */}
-        {/* ========================================================= */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
-          
-          {/* LEFT COLUMN: HIGH-CONVERTING HERO VALUE PROPOSITION */}
-          <div className="lg:col-span-6 space-y-5 sm:space-y-6 text-center lg:text-left">
-            
-            {/* Top Highlight Badge */}
-            <motion.div
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#ff5c01]/10 dark:bg-[#ff5c01]/20 border border-[#ff5c01]/30 text-[#ff5c01] dark:text-[#ff8038] text-xs font-black tracking-wide shadow-xs backdrop-blur-sm"
-            >
-              <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500 animate-pulse" />
-              <span>
-                {isBn
-                  ? '১ মাসের ফ্রি ট্রায়াল • ক্লাউড ব্যাকআপ • বারকোড রেডি'
-                  : '1 MONTH FREE TRIAL • CLOUD READY • BARCODE & POS'}
-              </span>
-            </motion.div>
-
-            {/* Main Headline */}
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-[1.15]"
-            >
-              {isBn ? (
-                <>
-                  আধুনিক খুচরা বিজনেসের <br className="hidden sm:inline" />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#ff5c01] via-purple-600 to-indigo-600 dark:from-[#ff8038] dark:via-purple-400 dark:to-indigo-300">
+              {/* H1 — white, last line lavender → mint gradient */}
+              <motion.h1
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.1 }}
+                className="text-4xl sm:text-5xl lg:text-[56px] font-extrabold text-white tracking-tight leading-[1.08]"
+              >
+                {isBn ? (
+                  <>
+                    আধুনিক খুচরা দোকানের
+                    <br />
                     স্মার্ট POS ও ইনভেন্টরি
-                  </span>{' '}
-                  প্ল্যাটফর্ম
-                </>
-              ) : (
-                <>
-                  Modern Retail POS &amp;{' '}
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#ff5c01] via-purple-600 to-indigo-600 dark:from-[#ff8038] dark:via-purple-400 dark:to-indigo-300">
+                    <br />
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#A5B4FC] to-[#5EEAD4]">
+                      এক জায়গায়
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    Modern Retail POS &amp;
+                    <br />
                     Smart Inventory
-                  </span>{' '}
-                  Platform
-                </>
-              )}
-            </motion.h1>
+                    <br />
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#A5B4FC] to-[#5EEAD4]">
+                      in One Place
+                    </span>
+                  </>
+                )}
+              </motion.h1>
 
-            {/* Subtitle */}
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed font-medium max-w-xl mx-auto lg:mx-0"
-            >
-              {isBn
-                ? 'দ্রুত বিলিং, অটো স্টক অ্যালার্ট, কাস্টমার বকেয়া খাতা ট্র্যাকিং, বারকোড স্টিকার প্রিন্ট ও এআই বিজনেস ইনসাইট — আপনার সকল দোকানের হিসাব এক জায়গায়।'
-                : 'Fast billing, automated stock alerts, customer due khata tracking, thermal barcode sticker printing, and AI business insights — all in one powerful SaaS platform.'}
-            </motion.p>
-
-            {/* Call to Action Buttons */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="flex flex-wrap items-center justify-center lg:justify-start gap-3 pt-1"
-            >
-              <motion.button
-                whileHover={{ scale: 1.04, y: -2 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={onOpenSignup}
-                className="px-6 py-3.5 bg-[#ff5c01] hover:bg-[#e05100] text-white font-black rounded-2xl text-sm transition-all shadow-xl shadow-[#ff5c01]/30 flex items-center gap-2.5 cursor-pointer relative overflow-hidden group"
+              {/* Subtext */}
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="text-base sm:text-lg text-slate-400 leading-relaxed font-normal max-w-xl mx-auto lg:mx-0"
               >
-                <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                <Sparkles className="w-4 h-4 text-amber-300 fill-amber-300" />
-                <span>{isBn ? 'নতুন দোকান তৈরি করুন (ফ্রি)' : 'Create Your Free Store'}</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </motion.button>
+                {isBn
+                  ? 'দ্রুত বিলিং, অটো স্টক অ্যালার্ট, কাস্টমার বকেয়া খাতা ট্র্যাকিং, বারকোড স্টিকার প্রিন্ট ও এআই বিজনেস ইনসাইট — আপনার সকল দোকানের হিসাব এক জায়গায়।'
+                  : 'Fast billing, automated stock alerts, customer due khata tracking, thermal barcode sticker printing, and AI business insights — all in one powerful SaaS platform.'}
+              </motion.p>
 
-              <motion.button
-                whileHover={{ scale: 1.03, y: -1 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={onOpenDemo}
-                className="px-6 py-3.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-800 font-bold rounded-2xl text-sm transition-all flex items-center gap-2 cursor-pointer shadow-2xs"
+              {/* CTAs */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+                className="flex flex-wrap items-center justify-center lg:justify-start gap-3 pt-1"
               >
-                <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                <span>{isBn ? 'লাইভ ডেমো ও লগইন' : 'Explore Live Demo'}</span>
-              </motion.button>
-            </motion.div>
+                <motion.button
+                  whileHover={{ scale: 1.03, y: -1 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={onOpenSignup}
+                  className="px-6 py-3.5 bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white font-bold rounded-xl text-sm transition-all shadow-lg shadow-indigo-500/30 flex items-center gap-2 cursor-pointer"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>{isBn ? 'ফ্রি শুরু করুন' : 'Get Started Free'}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </motion.button>
 
-            {/* Trust Badges */}
+                <motion.button
+                  whileHover={{ scale: 1.03, y: -1 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={onOpenDemo}
+                  className="px-6 py-3.5 bg-white/5 hover:bg-white/10 border border-white/20 text-white font-bold rounded-xl text-sm transition-all flex items-center gap-2 cursor-pointer"
+                >
+                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                  <span>{isBn ? 'লাইভ ডেমো দেখুন' : 'Explore Live Demo'}</span>
+                </motion.button>
+              </motion.div>
+
+              {/* Muted bottom row */}
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.6, delay: 0.4 }}
+                className="pt-1 text-xs font-semibold text-slate-500"
+              >
+                {isBn
+                  ? '১ মাস ফ্রি ট্রায়াল  •  ক্রেডিট কার্ড লাগে না  •  ওয়েব ও যেকোনো ফোন'
+                  : 'Free 1-month trial  •  No credit card  •  Web + any phone'}
+              </motion.p>
+            </div>
+
+            {/* RIGHT: overlapping product mockups */}
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-y-2 gap-x-5 text-xs font-bold text-slate-600 dark:text-slate-400"
+              initial={{ opacity: 0, scale: 0.96, y: 25 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.2 }}
+              className="lg:col-span-6 relative flex justify-center"
             >
-              <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                <span>{isBn ? 'নো ক্রেডিট কার্ড প্রয়োজন' : 'No Credit Card Required'}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                <span>{isBn ? '২ মিনিটে সেটআপ' : '2-Min Setup'}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                <span>{isBn ? 'মোবাইল ও পিসিতে সিঙ্ক' : 'Mobile & PC Cloud Sync'}</span>
-              </div>
+              <RetailInventoryAnimation onOpenSignup={onOpenSignup} />
             </motion.div>
           </div>
-
-          {/* RIGHT COLUMN: MODERN RETAIL & SMART INVENTORY ANIMATION + SCREENSHOT ANIMATIONS */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.96, y: 25 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.2 }}
-            className="lg:col-span-6 relative flex justify-center"
-          >
-            <RetailInventoryAnimation onOpenSignup={onOpenSignup} />
-          </motion.div>
         </div>
+      </section>
 
-        {/* ========================================================= */}
-        {/* HONEST HIGHLIGHTS BAR (no unverifiable store/sales claims) */}
-        {/* ========================================================= */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.4 }}
-          className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 max-w-5xl mx-auto pt-2"
-        >
-          <motion.div
-            whileHover={{ y: -4, transition: { duration: 0.2 } }}
-            className="bg-white/80 dark:bg-slate-900/80 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 text-center space-y-1 shadow-2xs backdrop-blur-sm"
-          >
-            <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
-              1 Month
-            </p>
-            <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              {isBn ? 'ফ্রি ট্রায়াল' : 'Free Trial Included'}
-            </p>
-          </motion.div>
-
-          <motion.div
-            whileHover={{ y: -4, transition: { duration: 0.2 } }}
-            className="bg-white/80 dark:bg-slate-900/80 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 text-center space-y-1 shadow-2xs backdrop-blur-sm"
-          >
-            <p className="text-2xl sm:text-3xl font-black text-[#ff5c01] dark:text-[#ff8038]">
-              100
-            </p>
-            <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              {isBn ? 'ফ্রি প্ল্যানে প্রোডাক্ট' : 'Products on Free Plan'}
-            </p>
-          </motion.div>
-
-          <motion.div
-            whileHover={{ y: -4, transition: { duration: 0.2 } }}
-            className="bg-white/80 dark:bg-slate-900/80 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 text-center space-y-1 shadow-2xs backdrop-blur-sm"
-          >
-            <p className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400">
-              3
-            </p>
-            <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              {isBn ? 'বেছে নেওয়ার প্ল্যান' : 'Plans to Choose From'}
-            </p>
-          </motion.div>
-
-          <motion.div
-            whileHover={{ y: -4, transition: { duration: 0.2 } }}
-            className="bg-white/80 dark:bg-slate-900/80 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 text-center space-y-1 shadow-2xs backdrop-blur-sm"
-          >
-            <p className="text-2xl sm:text-3xl font-black text-amber-500">POS</p>
-            <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              {isBn ? 'বারকোড ও থার্মাল প্রিন্ট' : 'Barcode & Thermal Print'}
-            </p>
-          </motion.div>
-        </motion.div>
-
+      {/* WORKS WITH YOUR HARDWARE strip */}
+      <div className="bg-white dark:bg-[#09090b] border-b border-slate-200 dark:border-slate-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 text-center">
+          <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">
+            {isBn ? 'আপনার হার্ডওয়্যারের সাথে চলে' : 'Works with your hardware'}
+          </span>
+          <span className="hidden sm:inline text-slate-300 dark:text-slate-700">|</span>
+          <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs font-semibold text-slate-500 dark:text-slate-400">
+            {hardwareItems.map((item, i) => (
+              <span key={item} className="flex items-center gap-2">
+                {i === 0 && <Printer className="w-3.5 h-3.5 text-indigo-500" />}
+                {i === 1 && <FileText className="w-3.5 h-3.5 text-indigo-500" />}
+                {i === 2 && <ScanBarcode className="w-3.5 h-3.5 text-indigo-500" />}
+                {i === 3 && <Printer className="w-3.5 h-3.5 text-indigo-500" />}
+                {i === 4 && <Smartphone className="w-3.5 h-3.5 text-indigo-500" />}
+                <span>{item}</span>
+                {i < hardwareItems.length - 1 && <span className="text-slate-300 dark:text-slate-700">•</span>}
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
-    </section>
+    </>
   );
 };

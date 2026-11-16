@@ -29,7 +29,7 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({
   const [legalModal, setLegalModal] = useState<'privacy' | 'terms' | null>(null);
 
   return (
-    <footer className="bg-slate-900 dark:bg-[#060608] border-t border-slate-800 text-slate-400 text-xs transition-colors">
+    <footer className="bg-white dark:bg-[#09090b] border-t border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-xs transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-10">
         
         {/* Top Footer 4 Columns Grid */}
@@ -44,12 +44,12 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({
                 siteName={settings.siteBrandName || 'YearInvo'}
                 subName={settings.siteSubBrandName !== undefined ? settings.siteSubBrandName : 'by Year Media'}
               />
-              <span className="font-black text-lg text-white tracking-tight">
+              <span className="font-black text-lg text-slate-900 dark:text-white tracking-tight">
                 {settings.siteBrandName || 'YearInvo'}
               </span>
             </div>
 
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
               {isBn
                 ? 'স্মার্ট খুচরা POS ও ইনভেন্টরি সফটওয়্যার। সহজ কেনাবেচা, অটো স্টক হিসাব ও থার্মাল বারকোড প্রিন্ট।'
                 : 'Empowering local SME merchants with cloud-native POS terminal, barcode printing, and profit management.'}
@@ -63,14 +63,14 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({
 
           {/* Col 2: Navigation Links */}
           <div className="space-y-3">
-            <h4 className="text-xs font-black text-white uppercase tracking-wider">
+            <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">
               {isBn ? 'নেভিগেশন' : 'Navigation'}
             </h4>
             <ul className="space-y-2">
               <li>
                 <button
                   onClick={() => onNavigateSection('home')}
-                  className="hover:text-white transition-colors cursor-pointer"
+                  className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer"
                 >
                   {isBn ? 'হোম পেজ' : 'Home'}
                 </button>
@@ -78,7 +78,7 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({
               <li>
                 <button
                   onClick={() => onNavigateSection('features')}
-                  className="hover:text-white transition-colors cursor-pointer"
+                  className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer"
                 >
                   {isBn ? 'ফিচার সমূহ' : 'Features'}
                 </button>
@@ -86,7 +86,7 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({
               <li>
                 <button
                   onClick={() => onNavigateSection('pricing')}
-                  className="hover:text-white transition-colors cursor-pointer"
+                  className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer"
                 >
                   {isBn ? 'প্রাইসিং ও প্ল্যান' : 'Pricing Plans'}
                 </button>
@@ -94,7 +94,7 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({
               <li>
                 <button
                   onClick={() => onNavigateSection('about')}
-                  className="hover:text-white transition-colors cursor-pointer"
+                  className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer"
                 >
                   {isBn ? 'আমাদের কথা' : 'About Us'}
                 </button>
@@ -102,7 +102,7 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({
               <li>
                 <button
                   onClick={() => onNavigateSection('support')}
-                  className="hover:text-white transition-colors cursor-pointer"
+                  className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer"
                 >
                   {isBn ? 'হেল্প সেন্টারে যোগাযোগ' : 'Support & Help Center'}
                 </button>
@@ -112,14 +112,14 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({
 
           {/* Col 3: Legal & Account Links */}
           <div className="space-y-3">
-            <h4 className="text-xs font-black text-white uppercase tracking-wider">
+            <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">
               {isBn ? 'শর্তাবলী ও অ্যাকাউন্ট' : 'Legal & Account'}
             </h4>
             <ul className="space-y-2">
               <li>
                 <button
                   onClick={() => setLegalModal('privacy')}
-                  className="hover:text-white transition-colors cursor-pointer"
+                  className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer"
                 >
                   {isBn ? 'প্রাইভেসী পলিসি (Privacy Policy)' : 'Privacy Policy'}
                 </button>
@@ -127,7 +127,7 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({
               <li>
                 <button
                   onClick={() => setLegalModal('terms')}
-                  className="hover:text-white transition-colors cursor-pointer"
+                  className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer"
                 >
                   {isBn ? 'ব্যবহারের শর্তাবলী (Terms & Conditions)' : 'Terms & Conditions'}
                 </button>
@@ -135,7 +135,7 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({
               <li>
                 <button
                   onClick={onOpenLogin}
-                  className="hover:text-white transition-colors cursor-pointer"
+                  className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer"
                 >
                   {isBn ? 'দোকানে লগইন করুন' : 'Sign In to Store'}
                 </button>
@@ -143,7 +143,7 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({
               <li>
                 <button
                   onClick={onOpenSignup}
-                  className="text-purple-400 hover:text-purple-300 font-bold transition-colors cursor-pointer"
+                  className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-bold transition-colors cursor-pointer"
                 >
                   {isBn ? 'ফ্রি অ্যাকাউন্ট তৈরি করুন' : 'Create Free Store'}
                 </button>
@@ -153,12 +153,12 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({
 
           {/* Col 4: Contact & Socials */}
           <div className="space-y-3">
-            <h4 className="text-xs font-black text-white uppercase tracking-wider">
+            <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">
               {isBn ? 'যোগাযোগ ও সোশ্যাল' : 'Contact Us'}
             </h4>
             <div className="space-y-2 text-xs">
               <p className="flex items-center gap-2">
-                <Mail className="w-3.5 h-3.5 text-purple-400" />
+                <Mail className="w-3.5 h-3.5 text-indigo-500" />
                 <span>teamstock07@gmail.com</span>
               </p>
               <p className="flex items-center gap-2">
@@ -175,7 +175,7 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({
               {['Facebook', 'LinkedIn', 'YouTube', 'WhatsApp'].map((s, i) => (
                 <span
                   key={i}
-                  className="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 text-[10px] font-bold cursor-pointer transition-colors"
+                  className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 text-[10px] font-bold cursor-pointer transition-colors"
                 >
                   {s}
                 </span>
@@ -186,7 +186,7 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({
         </div>
 
         {/* Bottom Copyright Notice */}
-        <div className="pt-6 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-slate-500">
+        <div className="pt-6 border-t border-slate-200 dark:border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-slate-500 dark:text-slate-400">
           <p>
             © {new Date().getFullYear()} {settings.siteBrandName || 'YearInvo'} {settings.siteSubBrandName !== undefined ? settings.siteSubBrandName : 'by Year Media'}. All rights reserved.
           </p>
@@ -203,15 +203,15 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({
       {/* Legal Modal Overlay (Privacy / Terms) */}
       {legalModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-xl w-full max-h-[85vh] overflow-y-auto relative space-y-4 text-slate-300">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 max-w-xl w-full max-h-[85vh] overflow-y-auto relative space-y-4 text-slate-600 dark:text-slate-300">
             <button
               onClick={() => setLegalModal(null)}
-              className="absolute top-5 right-5 p-2 rounded-full bg-slate-800 hover:bg-slate-700 text-white cursor-pointer"
+              className="absolute top-5 right-5 p-2 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-white cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
 
-            <h3 className="text-xl font-black text-white">
+            <h3 className="text-xl font-black text-slate-900 dark:text-white">
               {legalModal === 'privacy' ? 'Privacy Policy' : 'Terms & Conditions'}
             </h3>
 
