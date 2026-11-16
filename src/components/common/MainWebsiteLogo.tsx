@@ -44,9 +44,9 @@ export const MainWebsiteLogo: React.FC<MainWebsiteLogoProps> = ({
 
   return (
     <div className={`inline-flex items-center gap-2.5 ${className}`}>
-      {/* Official YearInvo logo supplied by Boss (public/logo.png) */}
+      {/* Official YearInvo logo supplied by Boss (public/logo.svg embeds the exact PNG) */}
       <img
-        src="/logo.png"
+        src="/logo.svg"
         alt={siteName}
         width={size}
         height={size}
