@@ -239,7 +239,7 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({
                   <strong>1. Fair Usage:</strong> Free starter accounts are limited to single store usage. Pro and Premium subscriptions grant extended catalog limits and priority support.
                 </p>
                 <p>
-                  <strong>2. Service Availability:</strong> While we aim for 99.9% uptime, software updates and cloud maintenance may occur periodically.
+                  <strong>2. Service Availability:</strong> We aim to keep the service available for your daily business, but software updates and cloud maintenance may cause occasional downtime.
                 </p>
                 <p>
                   <strong>3. Compliance:</strong> Merchants are responsible for ensuring invoice compliance and accurate product pricing.

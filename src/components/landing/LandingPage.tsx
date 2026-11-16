@@ -11,10 +11,11 @@ import { MobileLandingPage } from './mobile/MobileLandingPage';
 
 interface LandingPageProps {
   onOpenLogin: () => void;
-  onOpenSignup: () => void;
+  onOpenSignup: (plan?: 'free' | 'pro' | 'premium') => void;
+  onOpenDemo: () => void;
 }
 
-export const LandingPage: React.FC<LandingPageProps> = ({ onOpenLogin, onOpenSignup }) => {
+export const LandingPage: React.FC<LandingPageProps> = ({ onOpenLogin, onOpenSignup, onOpenDemo }) => {
   const { theme } = useApp();
   const [activeSection, setActiveSection] = useState<string>('home');
 
@@ -36,6 +37,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenLogin, onOpenSig
         <MobileLandingPage
           onOpenLogin={onOpenLogin}
           onOpenSignup={onOpenSignup}
+          onOpenDemo={onOpenDemo}
           onNavigateSection={handleNavigateSection}
         />
       </div>
@@ -56,6 +58,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenLogin, onOpenSig
         <LandingHero
           onOpenSignup={onOpenSignup}
           onOpenLogin={onOpenLogin}
+          onOpenDemo={onOpenDemo}
         />
 
         {/* Features Section */}

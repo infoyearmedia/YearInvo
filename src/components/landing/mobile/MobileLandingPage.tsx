@@ -51,19 +51,25 @@ import {
 
 interface MobileLandingPageProps {
   onOpenLogin: () => void;
-  onOpenSignup: () => void;
+  onOpenSignup: (plan?: 'free' | 'pro' | 'premium') => void;
+  onOpenDemo: () => void;
   onNavigateSection?: (sectionId: string) => void;
 }
 
 export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
   onOpenLogin,
   onOpenSignup,
+  onOpenDemo,
 }) => {
-  const { settings, updateSettings, language, setLanguage, theme, toggleTheme, exchangeRates } = useApp();
+  const { settings, updateSettings, language, setLanguage, theme, toggleTheme, exchangeRates, convertMoney, displayCurrencySymbol } = useApp();
   const isBn = language === 'bn';
   const displayCurrency = settings.currency || '৳';
   const isBDT = normalizeCurrencyCode(displayCurrency) === 'BDT';
   const symbol = getCurrencySymbol(displayCurrency);
+  // Convert a BDT amount to the selected display currency using the same
+  // live exchange rates as the pricing section (not just the symbol).
+  const money = (bdtAmount: number) =>
+    `${displayCurrencySymbol}${convertMoney(bdtAmount, 'BDT').toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 
   // Mobile Drawer State
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -78,6 +84,9 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
 
   // Notification Toast State
   const [showNotificationToast, setShowNotificationToast] = useState(false);
+
+  // Legal (Privacy / Terms) Modal State
+  const [legalModal, setLegalModal] = useState<'privacy' | 'terms' | null>(null);
 
   // Contact Form State
   const [contactName, setContactName] = useState('');
@@ -327,6 +336,24 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
         ? 'না, গুগল ফায়ারবেস সিকিউর ক্লাউড ডাটাবেসে আপনার সকল হিসাব শতভাগ সংরক্ষিত ও এনক্রিপ্টেড থাকে।'
         : 'Your store data is continuously backed up using Google Firebase Cloud encryption and strict authentication.',
     },
+    {
+      q: isBn ? 'ফ্রি ট্রায়ালের জন্য কি ক্রেডিট কার্ড লাগবে?' : 'Do I need a credit card for the free trial?',
+      a: isBn
+        ? 'না, ১ মাসের ফ্রি ট্রায়াল শুরু করতে কোনো ক্রেডিট কার্ড বা পেমেন্ট তথ্য লাগে না।'
+        : 'No. You can start the 1 month free trial without any credit card or payment details.',
+    },
+    {
+      q: isBn ? 'পরে কি প্ল্যান পরিবর্তন করা যাবে?' : 'Can I change my plan later?',
+      a: isBn
+        ? 'হ্যাঁ, যেকোনো সময় আপনার স্টোর ড্যাশবোর্ড থেকে Free থেকে Pro বা Premium প্ল্যানে উন্নীত হতে পারবেন।'
+        : 'Yes, you can upgrade or change your plan at any time directly from your store dashboard.',
+    },
+    {
+      q: isBn ? 'কোন কোন পেমেন্ট মাধ্যম সমর্থিত?' : 'Which payment methods are supported?',
+      a: isBn
+        ? 'বাংলাদেশে বিকাশ, নগদ ও রকেটের মাধ্যমে পেমেন্ট করা যায়। আন্তর্জাতিক কার্ড পেমেন্টের জন্য Paddle সমর্থিত।'
+        : 'In Bangladesh you can pay via bKash, Nagad and Rocket. International card payments are supported through Paddle.',
+    },
   ];
 
   return (
@@ -373,7 +400,6 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
             title="Notifications"
           >
             <Bell className="w-4 h-4" />
-            <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-purple-500 ring-2 ring-white dark:ring-slate-900 animate-pulse" />
           </button>
 
           {/* Profile / Login Quick Icon */}
@@ -396,7 +422,8 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
         </div>
       </header>
 
-      {/* Quick Notification Toast Drawer */}
+      {/* Notification Panel — honest empty state: no account is signed in,
+          so there are no notifications yet (no fake alerts invented) */}
       <AnimatePresence>
         {showNotificationToast && (
           <motion.div
@@ -406,10 +433,14 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
             className="fixed top-16 right-4 left-4 z-50 p-3.5 bg-slate-900 text-white rounded-2xl border border-slate-800 shadow-2xl flex items-center justify-between text-xs backdrop-blur-md"
           >
             <div className="flex items-center gap-2.5">
-              <Zap className="w-4 h-4 text-amber-400 fill-amber-400 shrink-0" />
+              <Bell className="w-4 h-4 text-slate-400 shrink-0" />
               <div>
-                <p className="font-bold text-white">YearInvo v2.4 Live Cloud System</p>
-                <p className="text-[10px] text-slate-400">1 Month Free Starter Plan active for retail merchants.</p>
+                <p className="font-bold text-white">{isBn ? 'নোটিফিকেশন' : 'Notifications'}</p>
+                <p className="text-[10px] text-slate-400">
+                  {isBn
+                    ? 'কোনো নতুন নোটিফিকেশন নেই। স্টোরে লগইন করলে স্টক ও বকেয়া অ্যালার্ট এখানে দেখাবে।'
+                    : 'No new notifications. Sign in to your store to see stock and due alerts here.'}
+                </p>
               </div>
             </div>
             <button
@@ -621,7 +652,7 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
         {/* Top Highlight Badge */}
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/10 text-purple-700 dark:text-[#ff8038] text-[10px] font-black border border-purple-500/20 shadow-2xs">
           <Zap className="w-3 h-3 text-amber-500 fill-amber-500 animate-pulse shrink-0" />
-          <span>{isBn ? '১০০% ফ্রি প্ল্যান • ক্লাউড ইনভেন্টরি' : '100% FREE STARTER • CLOUD POS'}</span>
+          <span>{isBn ? '১ মাসের ফ্রি ট্রায়াল • ক্লাউড ইনভেন্টরি' : '1 MONTH FREE TRIAL • CLOUD POS'}</span>
         </div>
 
         {/* Small Illustration Graphic */}
@@ -631,18 +662,18 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping inline-block" />
               Live POS Cash Terminal
             </span>
-            <span className="text-purple-600 dark:text-purple-400 font-extrabold">{symbol}2,450.00</span>
+            <span className="text-purple-600 dark:text-purple-400 font-extrabold">{money(2450)}</span>
           </div>
 
           <div className="grid grid-cols-2 gap-2 text-[10px] font-extrabold">
             <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
               <span className="text-slate-400 uppercase text-[8px] block">Today Sales</span>
-              <span className="text-slate-900 dark:text-white text-xs">{symbol}48,500</span>
+              <span className="text-slate-900 dark:text-white text-xs">{money(48500)}</span>
             </div>
 
             <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
               <span className="text-slate-400 uppercase text-[8px] block">Net Profit</span>
-              <span className="text-purple-600 dark:text-[#ff8038] text-xs">{symbol}9,350</span>
+              <span className="text-purple-600 dark:text-[#ff8038] text-xs">{money(9350)}</span>
             </div>
           </div>
         </div>
@@ -688,7 +719,7 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
 
           <motion.button
             whileTap={{ scale: 0.97 }}
-            onClick={onOpenLogin}
+            onClick={onOpenDemo}
             className="w-full py-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-bold rounded-2xl text-xs flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
           >
             <ShieldCheck className="w-4 h-4 text-emerald-500" />
@@ -696,21 +727,21 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
           </motion.button>
         </div>
 
-        {/* Quick Stats Grid */}
+        {/* Quick Stats Grid — honest highlights (no unverifiable claims) */}
         <div className="grid grid-cols-3 gap-2 pt-2">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-center">
-            <p className="text-base font-black text-slate-900 dark:text-white">5,000+</p>
-            <p className="text-[9px] font-bold text-slate-400 uppercase">Stores</p>
+            <p className="text-base font-black text-slate-900 dark:text-white">{isBn ? '১ মাস' : '1 Month'}</p>
+            <p className="text-[9px] font-bold text-slate-400 uppercase">{isBn ? 'ফ্রি ট্রায়াল' : 'Free Trial'}</p>
           </div>
 
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-center">
-            <p className="text-base font-black text-purple-600 dark:text-[#ff8038]">{symbol}150M+</p>
-            <p className="text-[9px] font-bold text-slate-400 uppercase">Sales</p>
+            <p className="text-base font-black text-purple-600 dark:text-[#ff8038]">100</p>
+            <p className="text-[9px] font-bold text-slate-400 uppercase">{isBn ? 'ফ্রি প্রোডাক্ট' : 'Free Products'}</p>
           </div>
 
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-center">
-            <p className="text-base font-black text-emerald-500">99.9%</p>
-            <p className="text-[9px] font-bold text-slate-400 uppercase">Uptime</p>
+            <p className="text-base font-black text-emerald-500">3</p>
+            <p className="text-[9px] font-bold text-slate-400 uppercase">{isBn ? 'প্ল্যান' : 'Plans'}</p>
           </div>
         </div>
 
@@ -905,7 +936,7 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
               </div>
 
               <button
-                onClick={onOpenSignup}
+                onClick={() => onOpenSignup(plan.id as 'free' | 'pro' | 'premium')}
                 className={`w-full py-3.5 rounded-2xl font-black text-xs transition-all flex items-center justify-center gap-2 cursor-pointer ${
                   plan.popular
                     ? 'bg-[#ff5c01] text-white shadow-lg shadow-[#ff5c01]/30'
@@ -1061,10 +1092,18 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
           {settings.siteBrandName || 'YearInvo'} {settings.siteSubBrandName !== undefined ? settings.siteSubBrandName : 'by Year Media'} • Smart POS &amp; Inventory Software
         </p>
 
-        <div className="flex items-center justify-center gap-3 text-[11px] font-bold text-slate-700 dark:text-slate-300">
+        <div className="flex flex-wrap items-center justify-center gap-3 text-[11px] font-bold text-slate-700 dark:text-slate-300">
           <button onClick={onOpenLogin} className="hover:underline cursor-pointer">Login</button>
           <span>•</span>
           <button onClick={onOpenSignup} className="hover:underline cursor-pointer">Sign Up</button>
+          <span>•</span>
+          <button onClick={() => setLegalModal('privacy')} className="hover:underline cursor-pointer">
+            {isBn ? 'প্রাইভেসি পলিসি' : 'Privacy Policy'}
+          </button>
+          <span>•</span>
+          <button onClick={() => setLegalModal('terms')} className="hover:underline cursor-pointer">
+            {isBn ? 'শর্তাবলী' : 'Terms'}
+          </button>
           <span>•</span>
           <button onClick={() => scrollToSection('contact')} className="hover:underline cursor-pointer">Contact</button>
         </div>
@@ -1073,6 +1112,56 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
           © {new Date().getFullYear()} {settings.siteBrandName || 'YearInvo'}. All rights reserved.
         </p>
       </footer>
+
+      {/* Legal Modal Overlay (Privacy / Terms) */}
+      {legalModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-xl w-full max-h-[85vh] overflow-y-auto relative space-y-4 text-slate-600 dark:text-slate-300">
+            <button
+              onClick={() => setLegalModal(null)}
+              className="absolute top-5 right-5 p-2 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-white cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <h3 className="text-xl font-black text-slate-900 dark:text-white">
+              {legalModal === 'privacy' ? 'Privacy Policy' : 'Terms & Conditions'}
+            </h3>
+
+            {legalModal === 'privacy' ? (
+              <div className="space-y-3 text-xs leading-relaxed font-normal">
+                <p>
+                  At YearInvo by Year Media, we respect your privacy and are committed to protecting your business data, product inventories, and sales ledger.
+                </p>
+                <p>
+                  <strong>1. Data Collection:</strong> We collect business profile information, user account credentials, product listings, and sales transaction logs solely to provide software functionality.
+                </p>
+                <p>
+                  <strong>2. Security:</strong> Your data is stored securely using Google Firebase Cloud database rules and encrypted connections.
+                </p>
+                <p>
+                  <strong>3. Data Ownership:</strong> You retain complete ownership of all customer data, inventory listings, and sales records entered into YearInvo.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3 text-xs leading-relaxed font-normal">
+                <p>
+                  Welcome to YearInvo by Year Media. By using our SaaS POS &amp; Inventory platform, you agree to these terms:
+                </p>
+                <p>
+                  <strong>1. Fair Usage:</strong> Free starter accounts are limited to single store usage. Pro and Premium subscriptions grant extended catalog limits and priority support.
+                </p>
+                <p>
+                  <strong>2. Service Availability:</strong> We aim to keep the service available for your daily business, but software updates and cloud maintenance may cause occasional downtime.
+                </p>
+                <p>
+                  <strong>3. Compliance:</strong> Merchants are responsible for ensuring invoice compliance and accurate product pricing.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
     </div>
   );

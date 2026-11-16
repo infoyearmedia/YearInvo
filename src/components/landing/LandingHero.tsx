@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { motion } from 'motion/react';
 import { useApp } from '../../context/AppContext';
 import { RetailInventoryAnimation } from './RetailInventoryAnimation';
@@ -17,50 +17,14 @@ import {
 } from 'lucide-react';
 
 interface LandingHeroProps {
-  onOpenSignup: () => void;
+  onOpenSignup: (plan?: 'free' | 'pro' | 'premium') => void;
   onOpenLogin: () => void;
+  onOpenDemo: () => void;
 }
 
-const AnimatedCounter: React.FC<{ value: number; prefix?: string; suffix?: string }> = ({
-  value,
-  prefix = '',
-  suffix = '',
-}) => {
-  const [count, setCount] = useState(0);
-
-  useEffect(() => {
-    let startTimestamp: number | null = null;
-    let animationFrameId: number;
-    const duration = 1500; // ms
-
-    const step = (timestamp: number) => {
-      if (!startTimestamp) startTimestamp = timestamp;
-      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-      // Ease out cubic
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setCount(Math.floor(eased * value));
-      if (progress < 1) {
-        animationFrameId = window.requestAnimationFrame(step);
-      }
-    };
-
-    animationFrameId = window.requestAnimationFrame(step);
-    return () => window.cancelAnimationFrame(animationFrameId);
-  }, [value]);
-
-  return (
-    <span>
-      {prefix}
-      {count.toLocaleString()}
-      {suffix}
-    </span>
-  );
-};
-
-export const LandingHero: React.FC<LandingHeroProps> = ({ onOpenSignup, onOpenLogin }) => {
-  const { settings, language } = useApp();
+export const LandingHero: React.FC<LandingHeroProps> = ({ onOpenSignup, onOpenDemo }) => {
+  const { language } = useApp();
   const isBn = language === 'bn';
-  const symbol = settings.currency || '৳';
 
   return (
     <section id="home" className="relative pt-4 sm:pt-10 pb-12 sm:pb-20 overflow-hidden">
@@ -125,8 +89,8 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onOpenSignup, onOpenLo
               <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500 animate-pulse" />
               <span>
                 {isBn
-                  ? '১০০% ফ্রি স্টার্টার প্ল্যান • ক্লাউড ব্যাকআপ • বারকোড রেডি'
-                  : '100% FREE STARTER PLAN • CLOUD READY • BARCODE & POS'}
+                  ? '১ মাসের ফ্রি ট্রায়াল • ক্লাউড ব্যাকআপ • বারকোড রেডি'
+                  : '1 MONTH FREE TRIAL • CLOUD READY • BARCODE & POS'}
               </span>
             </motion.div>
 
@@ -190,7 +154,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onOpenSignup, onOpenLo
               <motion.button
                 whileHover={{ scale: 1.03, y: -1 }}
                 whileTap={{ scale: 0.97 }}
-                onClick={onOpenLogin}
+                onClick={onOpenDemo}
                 className="px-6 py-3.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-800 font-bold rounded-2xl text-sm transition-all flex items-center gap-2 cursor-pointer shadow-2xs"
               >
                 <ShieldCheck className="w-4 h-4 text-emerald-500" />
@@ -232,7 +196,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onOpenSignup, onOpenLo
         </div>
 
         {/* ========================================================= */}
-        {/* BUSINESS TRUST METRICS BAR WITH ANIMATED COUNTERS         */}
+        {/* HONEST HIGHLIGHTS BAR (no unverifiable store/sales claims) */}
         {/* ========================================================= */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -245,10 +209,10 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onOpenSignup, onOpenLo
             className="bg-white/80 dark:bg-slate-900/80 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 text-center space-y-1 shadow-2xs backdrop-blur-sm"
           >
             <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
-              <AnimatedCounter value={5000} suffix="+" />
+              1 Month
             </p>
             <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              {isBn ? 'সক্রিয় দোকান' : 'Active Merchant Stores'}
+              {isBn ? 'ফ্রি ট্রায়াল' : 'Free Trial Included'}
             </p>
           </motion.div>
 
@@ -257,10 +221,10 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onOpenSignup, onOpenLo
             className="bg-white/80 dark:bg-slate-900/80 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 text-center space-y-1 shadow-2xs backdrop-blur-sm"
           >
             <p className="text-2xl sm:text-3xl font-black text-[#ff5c01] dark:text-[#ff8038]">
-              <AnimatedCounter value={150} prefix={symbol} suffix="M+" />
+              100
             </p>
             <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              {isBn ? 'মাসিক বিক্রি ভলিউম' : 'Monthly Sales Volume'}
+              {isBn ? 'ফ্রি প্ল্যানে প্রোডাক্ট' : 'Products on Free Plan'}
             </p>
           </motion.div>
 
@@ -269,10 +233,10 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onOpenSignup, onOpenLo
             className="bg-white/80 dark:bg-slate-900/80 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 text-center space-y-1 shadow-2xs backdrop-blur-sm"
           >
             <p className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400">
-              99.9%
+              3
             </p>
             <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              {isBn ? 'ক্লাউড আপটাইম' : 'Cloud Server Uptime'}
+              {isBn ? 'বেছে নেওয়ার প্ল্যান' : 'Plans to Choose From'}
             </p>
           </motion.div>
 
@@ -280,9 +244,9 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onOpenSignup, onOpenLo
             whileHover={{ y: -4, transition: { duration: 0.2 } }}
             className="bg-white/80 dark:bg-slate-900/80 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 text-center space-y-1 shadow-2xs backdrop-blur-sm"
           >
-            <p className="text-2xl sm:text-3xl font-black text-amber-500">24/7</p>
+            <p className="text-2xl sm:text-3xl font-black text-amber-500">POS</p>
             <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              {isBn ? 'লাইভ সাপোর্ট' : 'Real-time Cloud Sync'}
+              {isBn ? 'বারকোড ও থার্মাল প্রিন্ট' : 'Barcode & Thermal Print'}
             </p>
           </motion.div>
         </motion.div>

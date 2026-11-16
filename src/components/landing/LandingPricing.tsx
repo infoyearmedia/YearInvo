@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 
 interface LandingPricingProps {
-  onOpenSignup: () => void;
+  onOpenSignup: (plan?: 'free' | 'pro' | 'premium') => void;
 }
 
 export const LandingPricing: React.FC<LandingPricingProps> = ({ onOpenSignup }) => {
@@ -354,10 +354,10 @@ export const LandingPricing: React.FC<LandingPricingProps> = ({ onOpenSignup }) 
                   </div>
                 </div>
 
-                {/* Card CTA Action Button */}
+                {/* Card CTA Action Button — opens sign-up with this plan pre-selected */}
                 <div className="pt-8">
                   <button
-                    onClick={onOpenSignup}
+                    onClick={() => onOpenSignup(plan.id)}
                     className={`w-full py-3.5 rounded-2xl font-black text-xs transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer ${
                       plan.buttonVariant === 'primary'
                         ? 'bg-[#ff5c01] hover:bg-[#e05100] text-white shadow-lg shadow-[#ff5c01]/30 hover:shadow-xl hover:shadow-[#ff5c01]/40 hover:-translate-y-0.5'
@@ -383,7 +383,7 @@ export const LandingPricing: React.FC<LandingPricingProps> = ({ onOpenSignup }) 
             </div>
             <div>
               <h4 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
-                {isBn ? '১০০% নিরাপদ ও নিরবচ্ছিন্ন ক্লাউড সার্ভিস' : '100% Secure & Reliable Cloud Guarantee'}
+                {isBn ? 'নিরাপদ ও নির্ভরযোগ্য ক্লাউড সার্ভিস' : 'Secure & Reliable Cloud Service'}
               </h4>
               <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
                 {isBn
@@ -394,7 +394,7 @@ export const LandingPricing: React.FC<LandingPricingProps> = ({ onOpenSignup }) 
           </div>
 
           <button
-            onClick={onOpenSignup}
+            onClick={() => onOpenSignup('free')}
             className="px-5 py-2.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-black shrink-0 hover:bg-slate-800 transition-colors cursor-pointer"
           >
             {isBn ? 'ফ্রি ট্রায়াল শুরু করুন' : 'Start Free Trial'}

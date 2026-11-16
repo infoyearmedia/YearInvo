@@ -90,6 +90,30 @@ export const LandingSupport: React.FC = () => {
         ? 'হ্যাঁ, আপনি যেকোনো সময় আপনার স্টোর ড্যাশবোর্ড থেকে Free থেকে Pro বা Premium প্ল্যানে উন্নীত হতে পারবেন।'
         : 'Yes, you can upgrade, downgrade, or request plan switches at any time directly from your store dashboard.',
     },
+    {
+      q: isBn ? 'ফ্রি ট্রায়ালের জন্য কি ক্রেডিট কার্ড লাগবে?' : 'Do I need a credit card for the free trial?',
+      a: isBn
+        ? 'না, ১ মাসের ফ্রি ট্রায়াল শুরু করতে কোনো ক্রেডিট কার্ড বা পেমেন্ট তথ্য লাগে না।'
+        : 'No. You can start the 1 month free trial without any credit card or payment details.',
+    },
+    {
+      q: isBn ? 'একাধিক ডিভাইস বা শাখা থেকে কি ব্যবহার করা যাবে?' : 'Can I use YearInvo on multiple devices or branches?',
+      a: isBn
+        ? 'হ্যাঁ, ক্লাউড সিঙ্কের মাধ্যমে মোবাইল ও পিসি থেকে একই স্টোর পরিচালনা করা যায়। শাখার সংখ্যা আপনার প্ল্যানের উপর নির্ভর করে — Pro প্ল্যানে ১টি শাখা, Premium প্ল্যানে আনলিমিটেড শাখা।'
+        : 'Yes, cloud sync lets you run the same store from mobile and PC. Branches depend on your plan — 1 branch on Pro, unlimited branches on Premium.',
+    },
+    {
+      q: isBn ? 'কোন কোন পেমেন্ট মাধ্যম সমর্থিত?' : 'Which payment methods are supported?',
+      a: isBn
+        ? 'বাংলাদেশে বিকাশ, নগদ ও রকেটের মাধ্যমে পেমেন্ট করা যায়। আন্তর্জাতিক কার্ড পেমেন্টের জন্য Paddle সমর্থিত।'
+        : 'In Bangladesh you can pay via bKash, Nagad and Rocket. International card payments are supported through Paddle.',
+    },
+    {
+      q: isBn ? 'ফ্রি ট্রায়াল শেষ হলে কী হবে?' : 'What happens after my free trial ends?',
+      a: isBn
+        ? 'ট্রায়াল শেষ হলে আপনার স্টোরের ডাটা নিরাপদে সংরক্ষিত থাকবে। চালিয়ে যেতে Pro বা Premium প্ল্যানে আপগ্রেড করতে হবে।'
+        : 'After the trial ends, your store data stays safely stored. To keep using the full features, upgrade to a Pro or Premium plan.',
+    },
   ];
 
   return (

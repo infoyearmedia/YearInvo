@@ -48,7 +48,7 @@ import { ShoppingCart, BookOpen, QrCode, ShieldCheck, Banknote, Sparkles, Award,
 import { getDisplayBrandName } from './utils/brand';
 
 const MainLayout: React.FC = () => {
-  const { user, isEmailVerified, activeTab, setActiveTab, theme, settings } = useApp();
+  const { user, isEmailVerified, activeTab, setActiveTab, theme, settings, isDemoMode, exitDemoMode } = useApp();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showFirstTimeBizModal, setShowFirstTimeBizModal] = useState(() => {
     if (!user) return false;
@@ -370,6 +370,19 @@ const MainLayout: React.FC = () => {
     <div className={`h-screen overflow-hidden font-sans ${theme === 'dark' ? 'dark bg-[#0b0f19] text-slate-200' : 'bg-[#f1f5f9] text-slate-900'} bg-grid-pattern antialiased flex flex-col relative`}>
       {/* Subtle Ambient Radial Highlights */}
       <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[350px] bg-gradient-to-b from-orange-500/5 via-amber-500/3 to-transparent blur-3xl rounded-full" />
+
+      {/* Demo Mode Banner — sample data only, nothing here is a real store */}
+      {isDemoMode && (
+        <div className="relative z-20 flex flex-wrap items-center justify-center gap-2 bg-amber-500 px-4 py-2 text-center text-xs font-bold text-slate-950">
+          <span>👀 Demo Mode — you are viewing sample data from a demo store. Nothing here is saved to a real account.</span>
+          <button
+            onClick={exitDemoMode}
+            className="px-3 py-1 rounded-lg bg-slate-950 text-white text-[11px] font-black hover:bg-slate-800 transition-colors cursor-pointer"
+          >
+            Exit Demo
+          </button>
+        </div>
+      )}
 
       {/* Top Header Navigation */}
       <Header onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />

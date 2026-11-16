@@ -29,9 +29,14 @@ interface RetailInventoryAnimationProps {
 export const RetailInventoryAnimation: React.FC<RetailInventoryAnimationProps> = ({
   onOpenSignup,
 }) => {
-  const { settings, language, theme } = useApp();
+  const { settings, language, theme, convertMoney, displayCurrency, displayCurrencySymbol } = useApp();
   const isBn = language === 'bn';
-  const symbol = settings.currency || '৳';
+  const isBDT = displayCurrency === 'BDT';
+  const symbol = displayCurrencySymbol;
+  // Convert a BDT amount to the selected display currency using the same
+  // live exchange rates as the pricing section (not just the symbol).
+  const money = (bdtAmount: number) =>
+    `${displayCurrencySymbol}${convertMoney(bdtAmount, 'BDT').toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
   const brandName = getDisplayBrandName(settings.brandName) || 'Store';
 
   const [activeTab, setActiveTab] = useState<'pos' | 'inventory' | 'barcode' | 'ai'>('pos');
@@ -117,7 +122,7 @@ export const RetailInventoryAnimation: React.FC<RetailInventoryAnimationProps> =
 
           <div className="flex items-center justify-between text-[9px] pt-1">
             <span className="font-mono font-bold text-slate-500">#TSH-702</span>
-            <span className="font-black text-[#ff5c01]">{symbol}850</span>
+            <span className="font-black text-[#ff5c01]">{money(850)}</span>
           </div>
 
           <div className="flex items-center justify-center gap-1 text-[8.5px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 py-0.5 rounded">
@@ -187,7 +192,7 @@ export const RetailInventoryAnimation: React.FC<RetailInventoryAnimationProps> =
             Live POS Checkout
           </p>
           <p className="text-xs font-black text-slate-900 dark:text-white">
-            +{symbol}2,450 <span className="text-emerald-500 text-[10px]">bKash Paid</span>
+            +{money(2450)} <span className="text-emerald-500 text-[10px]">bKash Paid</span>
           </p>
         </div>
       </motion.div>
@@ -353,7 +358,7 @@ export const RetailInventoryAnimation: React.FC<RetailInventoryAnimationProps> =
                     <div className="flex items-center gap-2 shrink-0">
                       <span className="text-[10px] text-slate-500 font-bold">x{item.qty}</span>
                       <span className="font-black text-slate-900 dark:text-white text-xs">
-                        {symbol}{item.price * item.qty}
+                        {money(item.price * item.qty)}
                       </span>
                     </div>
                   </motion.div>
@@ -365,7 +370,7 @@ export const RetailInventoryAnimation: React.FC<RetailInventoryAnimationProps> =
                 <div>
                   <span className="text-[10px] text-slate-400 uppercase font-black">Net Total</span>
                   <p className="text-base font-black text-slate-900 dark:text-white">
-                    {symbol}3,950
+                    {money(3950)}
                   </p>
                 </div>
 
@@ -407,7 +412,7 @@ export const RetailInventoryAnimation: React.FC<RetailInventoryAnimationProps> =
                 </div>
                 <div className="p-2.5 bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl text-center">
                   <p className="text-[10px] font-bold text-slate-400 uppercase">Stock Valuation</p>
-                  <p className="text-sm font-black text-indigo-600 dark:text-indigo-400">{symbol}12.5L</p>
+                  <p className="text-sm font-black text-indigo-600 dark:text-indigo-400">{isBDT ? `${symbol}12.5L` : money(1250000)}</p>
                 </div>
                 <div className="p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl text-center">
                   <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase">Low Stock</p>
@@ -503,7 +508,7 @@ export const RetailInventoryAnimation: React.FC<RetailInventoryAnimationProps> =
                     <div className="py-1 font-mono text-[7.5px] font-bold text-slate-600 dark:text-slate-400">
                       |||| | || |||| |
                     </div>
-                    <p className="text-[10px] font-black text-[#ff5c01]">{symbol}850</p>
+                    <p className="text-[10px] font-black text-[#ff5c01]">{money(850)}</p>
                   </div>
 
                   <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-2 rounded-xl text-center space-y-1 shadow-2xs">
@@ -516,7 +521,7 @@ export const RetailInventoryAnimation: React.FC<RetailInventoryAnimationProps> =
                     <div className="py-1 font-mono text-[7.5px] font-bold text-slate-600 dark:text-slate-400">
                       ||| |||| | ||| |
                     </div>
-                    <p className="text-[10px] font-black text-[#ff5c01]">{symbol}1,650</p>
+                    <p className="text-[10px] font-black text-[#ff5c01]">{money(1650)}</p>
                   </div>
                 </div>
               </div>
@@ -556,7 +561,7 @@ export const RetailInventoryAnimation: React.FC<RetailInventoryAnimationProps> =
                   "Today's peak sales hour is between 4 PM - 8 PM. Net profit margin is healthy at 19.4%. Recommendation: Restock 15 units of Polo Shirts before the weekend rush."
                 </p>
                 <div className="flex items-center justify-between pt-1 text-[10px] font-bold text-amber-600 dark:text-amber-400">
-                  <span>Forecast Accuracy: 96%</span>
+                  <span>Sample AI Forecast</span>
                   <span className="bg-amber-500/20 px-2 py-0.5 rounded">Actionable Insight</span>
                 </div>
               </div>

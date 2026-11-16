@@ -100,6 +100,16 @@ import {
   initialInvestments,
   initialCapitalWithdrawals,
 } from '../data/mockData';
+import {
+  demoCategories,
+  demoBrands,
+  demoProducts,
+  demoCustomers,
+  demoSuppliers,
+  demoSales,
+  demoPurchases,
+  demoExpenses,
+} from '../data/demoData';
 import { translations } from '../i18n/translations';
 import { isRtlLanguage, getDefaultLanguageForCountry, SUPPORTED_LANGUAGES } from '../i18n/languages';
 import {
@@ -157,6 +167,10 @@ interface AppContextType {
   resendEmailVerification: () => Promise<{ success: boolean; message: string; cooldownRemaining?: number }>;
   checkEmailVerification: () => Promise<boolean>;
   logout: () => Promise<void>;
+  // Demo Mode (guest preview with sample data, no account, no cloud writes)
+  isDemoMode: boolean;
+  enterDemoMode: () => void;
+  exitDemoMode: () => Promise<void>;
   updateProfile: (data: Partial<UserProfile>) => void;
   updateUser: (data: Partial<UserProfile>) => void;
   uploadProfilePhoto: (photoDataUrl: string) => Promise<void>;
@@ -633,6 +647,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return defaultDashboardPreferences;
   });
 
+  // Demo Mode: guest preview session with clearly-labelled sample data.
+  // While true, no data is written to the cloud and the demo user is
+  // never persisted to localStorage, so a page reload ends the demo.
+  const [isDemoMode, setIsDemoMode] = useState(false);
+
   // Strictly default user to NULL for unauthenticated landing view
   const [user, setUser] = useState<UserProfile | null>(() => {
     const saved = localStorage.getItem('biz_user');
@@ -649,6 +668,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isEmailVerified, setIsEmailVerified] = useState<boolean>(true);
 
   useEffect(() => {
+    // Never persist the demo guest user: a reload must end the demo
+    // instead of restoring it as if it were a real signed-in account.
+    if (isDemoMode) return;
     try {
       if (user) {
         localStorage.setItem('biz_user', JSON.stringify(user));
@@ -1367,6 +1389,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return;
     }
 
+    if (isDemoMode) {
+      // Demo session: local sample data only. Never subscribe to the
+      // cloud and never write demo data to any real account.
+      setIsCloudSynced(false);
+      setProducts(demoProducts);
+      setCategories(demoCategories);
+      setBrands(demoBrands);
+      setCustomers(demoCustomers);
+      setSuppliers(demoSuppliers);
+      setExpenses(demoExpenses);
+      setSales(demoSales);
+      setPurchases(demoPurchases);
+      setAdjustments([]);
+      setDueCollections([]);
+      setTeamMembers([]);
+      setDevices([]);
+      setEmployees([]);
+      setPayrollPayments([]);
+      setSalaryAdjustments([]);
+      setAuditLogs([]);
+      setOnlineProducts([]);
+      setOnlineOrders([]);
+      setOnlineCustomers([]);
+      setPersonalContacts([]);
+      setPersonalTransactions([]);
+      return;
+    }
+
     const unsubscribe = subscribeToUserBusinessData(currentUserId, {
       onProductsLoaded: (cloudProducts, fromCloud) => {
         if (fromCloud) {
@@ -1821,22 +1871,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [theme]);
 
   useEffect(() => {
+    // Demo data must never overwrite a real store's local cache.
+    if (isDemoMode) return;
     localStorage.setItem('biz_products', JSON.stringify(products));
   }, [products]);
 
   useEffect(() => {
+    if (isDemoMode) return;
     localStorage.setItem('biz_sales', JSON.stringify(sales));
   }, [sales]);
 
   useEffect(() => {
+    if (isDemoMode) return;
     localStorage.setItem('biz_customers', JSON.stringify(customers));
   }, [customers]);
 
   useEffect(() => {
+    if (isDemoMode) return;
     localStorage.setItem('biz_suppliers', JSON.stringify(suppliers));
   }, [suppliers]);
 
   useEffect(() => {
+    if (isDemoMode) return;
     localStorage.setItem('biz_expenses', JSON.stringify(expenses));
   }, [expenses]);
 
@@ -2481,6 +2537,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         subscriptionStatus: 'active',
         storeAddress: data.storeAddress || '',
         affiliateCode: data.affiliateCode || '',
+        // Remember the plan the visitor picked on the pricing page so the
+        // subscription view can offer it after the account is created.
+        pendingPlan: data.pendingPlan,
         verifiedEmail: true,
         verifiedPhone: true,
         createdAt: new Date().toISOString().split('T')[0],
@@ -2690,6 +2749,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem('biz_user', 'null');
     } catch (e) {}
     logActivity('User Logged Out', 'ব্যবহারকারী লগআউট করেছে');
+  };
+
+  // Demo Mode: guest preview of the real dashboard with sample data.
+  // No account, no password, no cloud writes. The demo user is never
+  // persisted, so reloading the page ends the demo.
+  const enterDemoMode = () => {
+    const demoUser = initialRegisteredUsers[0];
+    setIsDemoMode(true);
+    setIsEmailVerified(true);
+    setUser({ ...demoUser });
+    setProducts(demoProducts);
+    setCategories(demoCategories);
+    setBrands(demoBrands);
+    setCustomers(demoCustomers);
+    setSuppliers(demoSuppliers);
+    setExpenses(demoExpenses);
+    setSales(demoSales);
+    setPurchases(demoPurchases);
+    setActiveTab('dashboard');
+  };
+
+  const exitDemoMode = async (): Promise<void> => {
+    setIsDemoMode(false);
+    await logout();
   };
 
   // Owner Panel User Management Handlers
@@ -6097,6 +6180,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         resendEmailVerification,
         checkEmailVerification,
         logout,
+        isDemoMode,
+        enterDemoMode,
+        exitDemoMode,
         updateProfile,
         updateUser,
         uploadProfilePhoto,
