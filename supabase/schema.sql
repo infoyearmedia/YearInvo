@@ -1,6 +1,6 @@
 -- ========================================================
 -- YearInvo Supabase PostgreSQL Database Schema
--- Run this script in: https://supabase.com/dashboard/project/rsacszkrsvktlzktdimp/sql
+-- Run this script in: https://supabase.com/dashboard/project/khntourzpzwyshnlpvak/sql
 -- ========================================================
 
 -- 1. Enable UUID Extension
