@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import type { TeamInvitation, TeamPermissions, TeamRole } from '../types';
+import type { TeamInvitation, TeamMember, TeamPermissions, TeamRole } from '../types';
 
 /**
  * Supabase-native team invitations.
@@ -283,4 +283,95 @@ export const acceptInvitation = async (
   }
 
   return { invitationId: details.id, ownerId: details.ownerId };
+};
+
+/**
+ * Accepted team members for one store owner, read from public.team_members.
+ *
+ * acceptInvitation() inserts one row per accepted invitation (owner_id =
+ * inviting store owner, role lowercased, status 'active'). The owner's
+ * TeamManagementView list is Firestore/localStorage-backed, so it merges
+ * these rows into that list by email — see TeamManagementView.
+ *
+ * Rows are returned as TeamMember objects with a stable `team-supabase-<id>`
+ * id, so the view can target the same row again for delete/disable.
+ * RLS: "Public & Auth Full Access team_members" (supabase/schema.sql:212)
+ * allows the owner's client to select/update/delete these rows.
+ */
+export interface TeamMemberRow {
+  id: string;
+  owner_id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  role: string;
+  permissions: Record<string, unknown> | null;
+  status: string;
+  created_at: string;
+}
+
+/** acceptInvitation() stores roles lowercased ('inventory manager', ...). */
+const dbRoleToTeamRole = (dbRole: string): TeamRole => {
+  switch ((dbRole || '').trim().toLowerCase()) {
+    case 'owner':
+      return 'Owner';
+    case 'manager':
+      return 'Manager';
+    case 'cashier':
+      return 'Cashier';
+    case 'inventory manager':
+    case 'inventory_manager':
+      return 'Inventory Manager';
+    case 'accountant':
+      return 'Accountant';
+    default:
+      return 'Custom Role';
+  }
+};
+
+export const listTeamMembers = async (ownerId: string): Promise<TeamMember[]> => {
+  if (!ownerId) return [];
+  const { data, error } = await supabase
+    .from('team_members')
+    .select('*')
+    .eq('owner_id', ownerId)
+    .eq('status', 'active')
+    .order('created_at', { ascending: true });
+  if (error) {
+    throw new Error(error.message || 'Could not load team members.');
+  }
+  return (data || []).map((row) => {
+    const r = row as TeamMemberRow;
+    return {
+      id: `team-supabase-${r.id}`,
+      name: r.name,
+      email: (r.email || '').toLowerCase(),
+      phone: r.phone || undefined,
+      role: dbRoleToTeamRole(r.role),
+      status: 'Active',
+      joinedDate: (r.created_at || '').split('T')[0] || new Date().toISOString().split('T')[0],
+      customPermissions: (r.permissions || {}) as unknown as Partial<TeamPermissions>,
+    } as TeamMember;
+  });
+};
+
+/** Delete one team_members row (owner deleting a member from their list). */
+export const removeTeamMember = async (rowId: string): Promise<void> => {
+  if (!rowId) return;
+  const { error } = await supabase.from('team_members').delete().eq('id', rowId);
+  if (error) {
+    throw new Error(error.message || 'Could not remove the team member.');
+  }
+};
+
+/** Flip one team_members row between 'active' and 'disabled'. */
+export const updateTeamMemberStatus = async (
+  rowId: string,
+  status: 'active' | 'disabled'
+): Promise<void> => {
+  if (!rowId) return;
+  const { error } = await supabase.from('team_members').update({ status }).eq('id', rowId);
+  if (error) {
+    throw new Error(error.message || 'Could not update the team member.');
+  }
 };

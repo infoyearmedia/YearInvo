@@ -1,21 +1,44 @@
 /**
- * Robust Offline Synchronization Queue & Conflict Resolution Service for YearInvo
- * 
+ * Offline Synchronization Queue & Sync Status Service for YearInvo
+ *
  * Manages:
  * - Online/Offline lifecycle detection & automatic reconnect triggers
- * - Idempotent sync queue processing (FIFO)
- * - Automatic cloud synchronization with Firebase/Firestore
+ * - Idempotent sync queue processing (FIFO) against Supabase PostgreSQL
  * - Deduplication of sales, stock adjustments, customers, and expenses
- * - Multi-device conflict resolution
+ *   (Supabase row upserts are idempotent by id)
  * - Safe offline authorization grace period validation
  * - Real-time sync status broadcasting to UI components
+ *
+ * HISTORY / WHY THIS IS SUPABASE-ONLY:
+ * The queue previously flushed every operation to Firestore
+ * (users/{uid}/businessData/*). That Firestore project is gone, so every
+ * flush failed forever: failed ops stayed in the IndexedDB queue, the
+ * error flag stuck, and the UI showed "Sync issue — Retrying..." on every
+ * account even though data saved fine. The queue now flushes to Supabase
+ * via the per-row upserts in supabaseDbService, and the indicator state
+ * is driven only by real Supabase outcomes (reported here by
+ * cloudSyncService after each save / initial load). No Firestore code
+ * remains in this file.
+ *
+ * NOTE — collections with no Supabase table: adjustments, dueCollections,
+ * investments, capitalWithdrawals, payroll, settings, onlineSettings,
+ * onlineCustomers and onlineProducts have no Supabase mapping in
+ * saveUserCloudCollection either, so there is no cloud row to push those
+ * ops to. Those ops are drained (their data already lives in localStorage
+ * / IndexedDB via AppContext) and never set the error state. Only the
+ * collections that actually live in Supabase can fail the queue.
  */
 
-import { doc, getDoc, setDoc, writeBatch } from 'firebase/firestore';
-import { db } from '../lib/firebase';
 import { offlineDb, SyncQueueItem } from './offlineDb';
-import { sanitizeForFirestore } from './cloudSyncService';
-import { Sale, Product, Customer, Expense, Supplier, Purchase, Investment, CapitalWithdrawal } from '../types';
+import {
+  saveSupabaseProduct,
+  saveSupabaseSale,
+  saveSupabaseCustomer,
+  saveSupabaseSupplier,
+  saveSupabaseExpense,
+  saveSupabasePurchase,
+  saveSupabaseOnlineOrder,
+} from './supabaseDbService';
 
 export type SyncStatus = 'online' | 'offline' | 'syncing' | 'synced' | 'error';
 
@@ -30,6 +53,11 @@ export interface SyncState {
 // 14-day maximum offline grace period for authenticated cached subscriptions
 export const MAX_OFFLINE_GRACE_PERIOD_MS = 14 * 24 * 60 * 60 * 1000;
 
+/** Outcome of the most recent real Supabase operation. 'unknown' until the
+ *  first save / load reports in (the initial Supabase load at login reports
+ *  immediately, so this is only the pre-login state). */
+type CloudStatus = 'unknown' | 'ok' | 'error';
+
 class SyncQueueService {
   private isOnline: boolean = typeof navigator !== 'undefined' ? navigator.onLine : true;
   private isSyncing: boolean = false;
@@ -38,7 +66,9 @@ class SyncQueueService {
   private pendingCount: number = 0;
   private lastSyncedAt: string | null = null;
   private errorMessage: string | null = null;
+  private cloudStatus: CloudStatus = 'unknown';
   private syncTimer: any = null;
+  private lastNotifiedKey: string | null = null;
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -55,7 +85,7 @@ class SyncQueueService {
         this.notifyState();
       });
 
-      // Periodic check every 30 seconds when online
+      // Periodic retry every 30 seconds when online
       this.syncTimer = setInterval(() => {
         if (this.isOnline && !this.isSyncing && this.currentUserId) {
           this.triggerSync();
@@ -88,7 +118,9 @@ class SyncQueueService {
       computedStatus = 'offline';
     } else if (this.isSyncing) {
       computedStatus = 'syncing';
-    } else if (this.errorMessage) {
+    } else if (this.cloudStatus === 'error') {
+      // Only a real Supabase failure reaches this state — never the old
+      // dead Firestore queue.
       computedStatus = 'error';
     } else if (this.pendingCount === 0) {
       computedStatus = 'synced';
@@ -103,8 +135,38 @@ class SyncQueueService {
     };
   }
 
+  /**
+   * Report the outcome of a real Supabase operation (save or initial load).
+   * Called by cloudSyncService.saveUserCloudCollection /
+   * subscribeToUserBusinessData. This is the ONLY thing that sets or clears
+   * the error state shown by SyncStatusIndicator.
+   */
+  public reportCloudResult(ok: boolean, errorMessage?: string): void {
+    if (ok) {
+      this.cloudStatus = 'ok';
+      this.errorMessage = null;
+      this.lastSyncedAt = new Date().toISOString();
+    } else {
+      this.cloudStatus = 'error';
+      this.errorMessage =
+        errorMessage || 'Could not reach the cloud database. Will retry automatically.';
+    }
+    this.notifyState();
+  }
+
   private notifyState() {
     const state = this.getState();
+    // Saves report in very frequently (every cloud write); skip notifying
+    // when nothing the UI shows actually changed.
+    const key = [
+      state.status,
+      state.isOnline,
+      state.pendingCount,
+      state.lastSyncedAt,
+      state.errorMessage,
+    ].join('|');
+    if (key === this.lastNotifiedKey) return;
+    this.lastNotifiedKey = key;
     this.listeners.forEach((fn) => {
       try {
         fn(state);
@@ -163,7 +225,7 @@ class SyncQueueService {
   }
 
   /**
-   * Process all queued operations
+   * Process all queued operations against Supabase
    */
   public async triggerSync(): Promise<boolean> {
     if (this.isSyncing) return false;
@@ -177,7 +239,12 @@ class SyncQueueService {
     const pendingOps = await offlineDb.getPendingOperations(userId);
 
     if (pendingOps.length === 0) {
-      this.errorMessage = null;
+      // Nothing queued. A previous real Supabase error stays visible until
+      // a save / load succeeds; otherwise we are synced.
+      if (this.cloudStatus !== 'error') {
+        this.cloudStatus = 'ok';
+        this.errorMessage = null;
+      }
       this.lastSyncedAt = new Date().toISOString();
       this.notifyState();
       return true;
@@ -210,8 +277,11 @@ class SyncQueueService {
     await this.refreshPendingCount();
 
     if (anyFailed) {
+      // Real Supabase failure only — this is what shows the error banner.
+      this.cloudStatus = 'error';
       this.errorMessage = 'Some changes could not be synced. Will retry automatically.';
     } else {
+      this.cloudStatus = 'ok';
       this.errorMessage = null;
     }
 
@@ -219,384 +289,121 @@ class SyncQueueService {
     return !anyFailed;
   }
 
+  /** Normalize a payload that may be a single object, an array, or undefined. */
+  private toArray<T>(value: any): T[] {
+    if (Array.isArray(value)) return value as T[];
+    if (value === undefined || value === null) return [];
+    return [value as T];
+  }
+
+  /** Upsert every row; throws on the first failed write so the op stays queued. */
+  private async saveAll<T>(
+    userId: string,
+    items: T[] | undefined,
+    saver: (userId: string, item: T) => Promise<boolean>,
+    label: string
+  ): Promise<void> {
+    if (!items || items.length === 0) return;
+    for (const item of items) {
+      const ok = await saver(userId, item);
+      if (!ok) throw new Error(`Supabase write failed (${label})`);
+    }
+  }
+
   /**
-   * Process and idempotently merge single operation into Firestore
+   * Push a single queued operation to Supabase with idempotent row upserts.
+   * Throws when a Supabase write fails so the op stays FAILED and retries.
+   *
+   * This matters for CREATE_SALE: checkoutPOS (used by both POS and Quick
+   * Sale) never calls saveUserCloudCollection — the queue is its ONLY cloud
+   * path. Before this fix its sale/product/customer rows went to the dead
+   * Firestore queue and never reached Supabase at all.
    */
   private async processSingleOperation(userId: string, op: SyncQueueItem): Promise<void> {
     switch (op.operationType) {
       case 'CREATE_SALE': {
-        const newSale: Sale = op.payload.sale;
-        const updatedProducts: Product[] | undefined = op.payload.products;
-        const updatedCustomers: Customer[] | undefined = op.payload.customers;
-
-        // Fetch current cloud sales to deduplicate and prepend
-        const salesDocRef = doc(db, 'users', userId, 'businessData', 'sales');
-        const salesSnap = await getDoc(salesDocRef);
-        let cloudSales: Sale[] = [];
-        if (salesSnap.exists()) {
-          const d = salesSnap.data();
-          cloudSales = Array.isArray(d.items) ? d.items : Array.isArray(d.sales) ? d.sales : [];
+        const sale = op.payload?.sale;
+        if (!sale) throw new Error('CREATE_SALE payload has no sale');
+        if (!(await saveSupabaseSale(userId, sale))) {
+          throw new Error('Supabase write failed (sale)');
         }
-
-        // Idempotent check: sale with this ID or InvoiceNo already present?
-        const alreadyExists = cloudSales.some(
-          (s) => s.id === newSale.id || (s.invoiceNo && s.invoiceNo === newSale.invoiceNo)
-        );
-
-        if (!alreadyExists) {
-          cloudSales = [newSale, ...cloudSales];
-        }
-
-        const batchPayloads: Record<string, any> = {
-          sales: { items: cloudSales },
-        };
-
-        if (updatedProducts && updatedProducts.length > 0) {
-          batchPayloads.products = { items: updatedProducts };
-        }
-
-        if (updatedCustomers && updatedCustomers.length > 0) {
-          batchPayloads.customers = { items: updatedCustomers };
-        }
-
-        // Execute batch write in Firestore
-        const batch = writeBatch(db);
-        const now = new Date().toISOString();
-        for (const [key, val] of Object.entries(batchPayloads)) {
-          const ref = doc(db, 'users', userId, 'businessData', key);
-          batch.set(ref, { ...sanitizeForFirestore(val), updatedAt: now }, { merge: true });
-        }
-        await batch.commit();
+        await this.saveAll(userId, this.toArray(op.payload?.products), saveSupabaseProduct, 'products');
+        await this.saveAll(userId, this.toArray(op.payload?.customers), saveSupabaseCustomer, 'customers');
         break;
       }
 
       case 'BATCH_UPDATE_PRODUCTS':
       case 'UPDATE_PRODUCT': {
-        const productsDocRef = doc(db, 'users', userId, 'businessData', 'products');
-        await setDoc(
-          productsDocRef,
-          {
-            items: sanitizeForFirestore(op.payload.products || op.payload),
-            updatedAt: new Date().toISOString(),
-          },
-          { merge: true }
-        );
+        const products = this.toArray(op.payload?.products ?? op.payload);
+        await this.saveAll(userId, products, saveSupabaseProduct, 'products');
         break;
       }
 
       case 'CREATE_EXPENSE': {
-        const newExpense: Expense = op.payload.expense;
-        const expDocRef = doc(db, 'users', userId, 'businessData', 'expenses');
-        const expSnap = await getDoc(expDocRef);
-        let cloudExpenses: Expense[] = [];
-        if (expSnap.exists()) {
-          const d = expSnap.data();
-          cloudExpenses = Array.isArray(d.items) ? d.items : Array.isArray(d.expenses) ? d.expenses : [];
+        const expense = op.payload?.expense;
+        if (!expense) throw new Error('CREATE_EXPENSE payload has no expense');
+        if (!(await saveSupabaseExpense(userId, expense))) {
+          throw new Error('Supabase write failed (expense)');
         }
-        if (!cloudExpenses.some((e) => e.id === newExpense.id)) {
-          cloudExpenses = [newExpense, ...cloudExpenses];
-        }
-        await setDoc(
-          expDocRef,
-          { items: sanitizeForFirestore(cloudExpenses), updatedAt: new Date().toISOString() },
-          { merge: true }
-        );
         break;
       }
 
       case 'CREATE_CUSTOMER':
       case 'UPDATE_CUSTOMER': {
-        const customersDocRef = doc(db, 'users', userId, 'businessData', 'customers');
-        await setDoc(
-          customersDocRef,
-          { items: sanitizeForFirestore(op.payload.customers || op.payload), updatedAt: new Date().toISOString() },
-          { merge: true }
-        );
+        const customers = this.toArray(op.payload?.customers ?? op.payload);
+        await this.saveAll(userId, customers, saveSupabaseCustomer, 'customers');
+        break;
+      }
+
+      case 'CREATE_SUPPLIER':
+      case 'UPDATE_SUPPLIER': {
+        const suppliers = this.toArray(op.payload?.suppliers ?? op.payload);
+        await this.saveAll(userId, suppliers, saveSupabaseSupplier, 'suppliers');
         break;
       }
 
       case 'CREATE_PURCHASE': {
-        const newPurchase: Purchase = op.payload.purchase;
-        const updatedProducts: Product[] | undefined = op.payload.products;
-        const updatedSuppliers: Supplier[] | undefined = op.payload.suppliers;
-
-        const pDocRef = doc(db, 'users', userId, 'businessData', 'purchases');
-        const pSnap = await getDoc(pDocRef);
-        let cloudPurchases: Purchase[] = [];
-        if (pSnap.exists()) {
-          const d = pSnap.data();
-          cloudPurchases = Array.isArray(d.items) ? d.items : Array.isArray(d.purchases) ? d.purchases : [];
+        const purchase = op.payload?.purchase;
+        if (!purchase) throw new Error('CREATE_PURCHASE payload has no purchase');
+        if (!(await saveSupabasePurchase(userId, purchase))) {
+          throw new Error('Supabase write failed (purchase)');
         }
-        if (!cloudPurchases.some((p) => p.id === newPurchase.id || p.purchaseNo === newPurchase.purchaseNo)) {
-          cloudPurchases = [newPurchase, ...cloudPurchases];
-        }
-
-        const batch = writeBatch(db);
-        const now = new Date().toISOString();
-        batch.set(pDocRef, { items: sanitizeForFirestore(cloudPurchases), updatedAt: now }, { merge: true });
-        if (updatedProducts) {
-          batch.set(
-            doc(db, 'users', userId, 'businessData', 'products'),
-            { items: sanitizeForFirestore(updatedProducts), updatedAt: now },
-            { merge: true }
-          );
-        }
-        if (updatedSuppliers) {
-          batch.set(
-            doc(db, 'users', userId, 'businessData', 'suppliers'),
-            { items: sanitizeForFirestore(updatedSuppliers), updatedAt: now },
-            { merge: true }
-          );
-        }
-        await batch.commit();
+        await this.saveAll(userId, this.toArray(op.payload?.products), saveSupabaseProduct, 'products');
+        await this.saveAll(userId, this.toArray(op.payload?.suppliers), saveSupabaseSupplier, 'suppliers');
         break;
       }
 
-      case 'STOCK_ADJUSTMENT': {
-        const adjDocRef = doc(db, 'users', userId, 'businessData', 'adjustments');
-        const adjSnap = await getDoc(adjDocRef);
-        let cloudAdjs: any[] = [];
-        if (adjSnap.exists()) {
-          const d = adjSnap.data();
-          cloudAdjs = Array.isArray(d.items) ? d.items : [];
-        }
-        const newAdj = op.payload.adjustment;
-        if (!cloudAdjs.some((a) => a.id === newAdj.id)) {
-          cloudAdjs = [newAdj, ...cloudAdjs];
-        }
-        const batch = writeBatch(db);
-        const now = new Date().toISOString();
-        batch.set(adjDocRef, { items: sanitizeForFirestore(cloudAdjs), updatedAt: now }, { merge: true });
-        if (op.payload.products) {
-          batch.set(
-            doc(db, 'users', userId, 'businessData', 'products'),
-            { items: sanitizeForFirestore(op.payload.products), updatedAt: now },
-            { merge: true }
-          );
-        }
-        await batch.commit();
-        break;
-      }
-
-      case 'DUE_COLLECTION': {
-        const dueDocRef = doc(db, 'users', userId, 'businessData', 'dueCollections');
-        const dueSnap = await getDoc(dueDocRef);
-        let cloudDues: any[] = [];
-        if (dueSnap.exists()) {
-          const d = dueSnap.data();
-          cloudDues = Array.isArray(d.items) ? d.items : [];
-        }
-        const newDue = op.payload.dueCollection;
-        if (!cloudDues.some((dc) => dc.id === newDue.id)) {
-          cloudDues = [newDue, ...cloudDues];
-        }
-        const batch = writeBatch(db);
-        const now = new Date().toISOString();
-        batch.set(dueDocRef, { items: sanitizeForFirestore(cloudDues), updatedAt: now }, { merge: true });
-        if (op.payload.customers) {
-          batch.set(
-            doc(db, 'users', userId, 'businessData', 'customers'),
-            { items: sanitizeForFirestore(op.payload.customers), updatedAt: now },
-            { merge: true }
-          );
-        }
-        await batch.commit();
-        break;
-      }
-
-      case 'CREATE_INVESTMENT': {
-        const invDocRef = doc(db, 'users', userId, 'businessData', 'investments');
-        const invSnap = await getDoc(invDocRef);
-        let cloudInvs: Investment[] = [];
-        if (invSnap.exists()) {
-          const d = invSnap.data();
-          cloudInvs = Array.isArray(d.items) ? d.items : [];
-        }
-        const newInv: Investment = op.payload.investment;
-        if (!cloudInvs.some((i) => i.id === newInv.id)) {
-          cloudInvs = [newInv, ...cloudInvs];
-        }
-        await setDoc(
-          invDocRef,
-          { items: sanitizeForFirestore(cloudInvs), updatedAt: new Date().toISOString() },
-          { merge: true }
-        );
-        break;
-      }
-
-      case 'CREATE_CAPITAL_WITHDRAWAL': {
-        const cwDocRef = doc(db, 'users', userId, 'businessData', 'capitalWithdrawals');
-        const cwSnap = await getDoc(cwDocRef);
-        let cloudCws: CapitalWithdrawal[] = [];
-        if (cwSnap.exists()) {
-          const d = cwSnap.data();
-          cloudCws = Array.isArray(d.items) ? d.items : [];
-        }
-        const newCw: CapitalWithdrawal = op.payload.withdrawal;
-        if (!cloudCws.some((c) => c.id === newCw.id)) {
-          cloudCws = [newCw, ...cloudCws];
-        }
-        await setDoc(
-          cwDocRef,
-          { items: sanitizeForFirestore(cloudCws), updatedAt: new Date().toISOString() },
-          { merge: true }
-        );
-        break;
-      }
-
-      case 'PAYROLL_PAYMENT':
-      case 'SALARY_ADJUSTMENT': {
-        const payrollDocRef = doc(db, 'users', userId, 'businessData', 'payroll');
-        await setDoc(
-          payrollDocRef,
-          { ...sanitizeForFirestore(op.payload), updatedAt: new Date().toISOString() },
-          { merge: true }
-        );
-        break;
-      }
-
-      case 'CREATE_ONLINE_ORDER': {
-        const ordersDocRef = doc(db, 'users', userId, 'businessData', 'onlineOrders');
-        let ordersToSave: any[] = [];
-        if (Array.isArray(op.payload.orders)) {
-          ordersToSave = op.payload.orders;
-        } else if (Array.isArray(op.payload)) {
-          ordersToSave = op.payload;
-        } else {
-          const newOrder = op.payload.order || op.payload;
-          const snap = await getDoc(ordersDocRef);
-          let current: any[] = [];
-          if (snap.exists()) {
-            const d = snap.data();
-            current = Array.isArray(d.items) ? d.items : Array.isArray(d.orders) ? d.orders : [];
-          }
-          ordersToSave = [newOrder, ...current.filter((o) => o.id !== newOrder.id)];
-        }
-
-        const batch = writeBatch(db);
-        const now = new Date().toISOString();
-        batch.set(ordersDocRef, { items: sanitizeForFirestore(ordersToSave), updatedAt: now }, { merge: true });
-
-        if (op.payload.updatedOnlineProducts && Array.isArray(op.payload.updatedOnlineProducts)) {
-          const prodDocRef = doc(db, 'users', userId, 'businessData', 'onlineProducts');
-          batch.set(prodDocRef, { items: sanitizeForFirestore(op.payload.updatedOnlineProducts), updatedAt: now }, { merge: true });
-        }
-        await batch.commit();
-        break;
-      }
-
+      case 'CREATE_ONLINE_ORDER':
       case 'UPDATE_ONLINE_ORDER': {
-        const ordersDocRef = doc(db, 'users', userId, 'businessData', 'onlineOrders');
-        let ordersToSave: any[] = [];
-        if (Array.isArray(op.payload.orders)) {
-          ordersToSave = op.payload.orders;
-        } else if (Array.isArray(op.payload)) {
-          ordersToSave = op.payload;
-        } else {
-          const updatedOrder = op.payload.order || op.payload;
-          const snap = await getDoc(ordersDocRef);
-          let current: any[] = [];
-          if (snap.exists()) {
-            const d = snap.data();
-            current = Array.isArray(d.items) ? d.items : Array.isArray(d.orders) ? d.orders : [];
-          }
-          ordersToSave = current.map((o) => (o.id === updatedOrder.id ? { ...o, ...updatedOrder } : o));
-          if (!ordersToSave.some((o) => o.id === updatedOrder.id)) {
-            ordersToSave = [updatedOrder, ...ordersToSave];
-          }
-        }
-        await setDoc(
-          ordersDocRef,
-          { items: sanitizeForFirestore(ordersToSave), updatedAt: new Date().toISOString() },
-          { merge: true }
-        );
+        // Payload is a single order object (AppContext enqueues newOrder /
+        // targetOrder); the old Firestore code also accepted { orders: [] }.
+        const orders = this.toArray(op.payload?.orders ?? op.payload?.order ?? op.payload);
+        await this.saveAll(userId, orders, saveSupabaseOnlineOrder, 'onlineOrders');
+        // op.payload.updatedOnlineProducts has no Supabase table mapping
+        // (saveUserCloudCollection doesn't persist onlineProducts either);
+        // it already lives in localStorage / IndexedDB via AppContext.
         break;
       }
 
       case 'CREATE_ONLINE_CUSTOMER':
-      case 'UPDATE_ONLINE_CUSTOMER': {
-        const onlineCustDocRef = doc(db, 'users', userId, 'businessData', 'onlineCustomers');
-        let custsToSave: any[] = [];
-        if (Array.isArray(op.payload.customers)) {
-          custsToSave = op.payload.customers;
-        } else if (Array.isArray(op.payload)) {
-          custsToSave = op.payload;
-        } else {
-          const targetCust = op.payload.customer || op.payload;
-          const snap = await getDoc(onlineCustDocRef);
-          let current: any[] = [];
-          if (snap.exists()) {
-            const d = snap.data();
-            current = Array.isArray(d.items) ? d.items : Array.isArray(d.customers) ? d.customers : [];
-          }
-          if (op.operationType === 'CREATE_ONLINE_CUSTOMER') {
-            custsToSave = [targetCust, ...current.filter((c) => c.id !== targetCust.id)];
-          } else {
-            custsToSave = current.map((c) => (c.id === targetCust.id ? { ...c, ...targetCust } : c));
-            if (!custsToSave.some((c) => c.id === targetCust.id)) {
-              custsToSave = [targetCust, ...custsToSave];
-            }
-          }
-        }
-        await setDoc(
-          onlineCustDocRef,
-          { items: sanitizeForFirestore(custsToSave), updatedAt: new Date().toISOString() },
-          { merge: true }
-        );
-        break;
-      }
-
+      case 'UPDATE_ONLINE_CUSTOMER':
       case 'CREATE_ONLINE_PRODUCT':
       case 'UPDATE_ONLINE_PRODUCT':
-      case 'DELETE_ONLINE_PRODUCT': {
-        const onlineProdDocRef = doc(db, 'users', userId, 'businessData', 'onlineProducts');
-        let prodsToSave: any[] = [];
-        if (Array.isArray(op.payload.products)) {
-          prodsToSave = op.payload.products;
-        } else if (Array.isArray(op.payload)) {
-          prodsToSave = op.payload;
-        } else {
-          const snap = await getDoc(onlineProdDocRef);
-          let current: any[] = [];
-          if (snap.exists()) {
-            const d = snap.data();
-            current = Array.isArray(d.items) ? d.items : Array.isArray(d.products) ? d.products : [];
-          }
-          if (op.operationType === 'DELETE_ONLINE_PRODUCT') {
-            const deleteId = op.payload.id || op.payload;
-            prodsToSave = current.filter((p) => p.id !== deleteId);
-          } else if (op.operationType === 'CREATE_ONLINE_PRODUCT') {
-            const newProd = op.payload.product || op.payload;
-            prodsToSave = [newProd, ...current.filter((p) => p.id !== newProd.id)];
-          } else {
-            const updProd = op.payload.product || op.payload;
-            prodsToSave = current.map((p) => (p.id === updProd.id ? { ...p, ...updProd } : p));
-          }
-        }
-        await setDoc(
-          onlineProdDocRef,
-          { items: sanitizeForFirestore(prodsToSave), updatedAt: new Date().toISOString() },
-          { merge: true }
-        );
-        break;
-      }
-
+      case 'DELETE_ONLINE_PRODUCT':
+      case 'STOCK_ADJUSTMENT':
+      case 'DUE_COLLECTION':
+      case 'CREATE_INVESTMENT':
+      case 'CREATE_CAPITAL_WITHDRAWAL':
+      case 'PAYROLL_PAYMENT':
+      case 'SALARY_ADJUSTMENT':
+      case 'UPDATE_SETTINGS':
       case 'UPDATE_ONLINE_SETTINGS': {
-        const onlineSettingsDocRef = doc(db, 'users', userId, 'businessData', 'onlineSettings');
-        await setDoc(
-          onlineSettingsDocRef,
-          { settings: sanitizeForFirestore(op.payload), updatedAt: new Date().toISOString() },
-          { merge: true }
-        );
-        break;
-      }
-
-      case 'UPDATE_SETTINGS': {
-        const settingsDocRef = doc(db, 'users', userId, 'businessData', 'settings');
-        await setDoc(
-          settingsDocRef,
-          { settings: sanitizeForFirestore(op.payload), updatedAt: new Date().toISOString() },
-          { merge: true }
+        // No Supabase table exists for these collections (the main save path
+        // in saveUserCloudCollection doesn't persist them either). The data
+        // already lives in localStorage / IndexedDB via AppContext, so the
+        // op is drained here instead of failing forever against Firestore.
+        console.log(
+          `[SyncQueue] Operation ${op.opId} (${op.operationType}) has no Supabase table; kept locally only.`
         );
         break;
       }

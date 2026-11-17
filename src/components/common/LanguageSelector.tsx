@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Language } from '../../types';
 import { SUPPORTED_LANGUAGES, isRtlLanguage } from '../../i18n/languages';
-import { getMappedCurrencyForLanguage } from '../../config/languageCurrency';
 import { Globe, Check, ChevronDown } from 'lucide-react';
 
 interface LanguageSelectorProps {
@@ -14,7 +13,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   variant = 'dropdown',
   className = '',
 }) => {
-  const { language, setLanguage, settings, updateSettings } = useApp();
+  const { language, setLanguage } = useApp();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -31,12 +30,10 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Language and currency are INDEPENDENT settings: picking a language
+  // must never change the currency (and vice versa).
   const handleSelectLanguage = (code: Language) => {
     setLanguage(code);
-    const mappedCurrency = getMappedCurrencyForLanguage(code);
-    if (settings.currency !== mappedCurrency) {
-      updateSettings({ currency: mappedCurrency });
-    }
     setIsOpen(false);
   };
 

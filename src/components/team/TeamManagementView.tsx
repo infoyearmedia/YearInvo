@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   TeamMember,
@@ -10,7 +10,10 @@ import {
   buildInvitationLink,
   createInvitation,
   listInvitations,
+  listTeamMembers,
+  removeTeamMember,
   revokeInvitation,
+  updateTeamMemberStatus,
   type InvitationListItem,
 } from '../../services/teamInvitations';
 import {
@@ -262,8 +265,69 @@ export const TeamManagementView: React.FC = () => {
     }
   };
 
+  // Merge accepted Supabase team_members rows into the local (Firestore /
+  // localStorage-backed) member list. acceptInvitation() writes the durable
+  // membership to public.team_members, but nothing writes it into this
+  // list — so without this sync an accepted member never shows up here.
+  // Match is by email: the invite flow already created a local 'Invited'
+  // placeholder for the same email, which the accept flips to 'Active'.
+  // The merged member adopts the Supabase row id (`team-supabase-<id>`) so
+  // delete / disable below can target the same row — otherwise a deleted
+  // member would be re-added on the next sync. Local state always wins for
+  // members already 'Active' or 'Disabled' (never re-activated from here),
+  // and the list is only saved when the merge actually changes something.
+  const teamMembersRef = useRef(teamMembers);
+  teamMembersRef.current = teamMembers;
+
+  const syncAcceptedMembers = async () => {
+    if (!user?.id) return;
+    try {
+      const accepted = await listTeamMembers(user.id);
+      if (accepted.length === 0) return;
+      const current = teamMembersRef.current;
+      let changed = false;
+      const merged = current.map((m) => {
+        const row = accepted.find((r) => r.email.toLowerCase() === m.email.toLowerCase());
+        if (!row) return m;
+        const next = { ...m };
+        if (next.id !== row.id) {
+          next.id = row.id;
+          changed = true;
+        }
+        if (next.status === 'Invited') {
+          next.status = 'Active';
+          next.name = row.name;
+          next.phone = row.phone || next.phone;
+          next.joinedDate = row.joinedDate;
+          // The accept flow stores no permissions ({}), so the owner's
+          // invite-time customPermissions stay authoritative — only adopt
+          // the row's permissions when it actually carries some.
+          if (row.customPermissions && Object.keys(row.customPermissions).length > 0) {
+            next.customPermissions = row.customPermissions;
+          }
+          changed = true;
+        }
+        return next;
+      });
+      for (const row of accepted) {
+        if (!merged.some((m) => m.email.toLowerCase() === row.email.toLowerCase())) {
+          merged.push(row);
+          changed = true;
+        }
+      }
+      if (changed) saveTeamMembers(merged);
+    } catch (e: any) {
+      console.warn('[Team] Accepted-member sync notice:', e?.message || e);
+    }
+  };
+
+  // Supabase team_members row id behind a merged member id, if any.
+  const supabaseRowId = (memberId: string): string | null =>
+    memberId.startsWith('team-supabase-') ? memberId.slice('team-supabase-'.length) : null;
+
   useEffect(() => {
     fetchInvitations();
+    syncAcceptedMembers();
   }, [user?.id]);
 
   const openAddModal = () => {
@@ -449,17 +513,40 @@ export const TeamManagementView: React.FC = () => {
     }
   };
 
-  const handleDeleteMember = (id: string, name: string) => {
-    if (confirm(`Are you sure you want to remove team member "${name}"?`)) {
-      const updated = teamMembers.filter((m) => m.id !== id);
-      saveTeamMembers(updated);
+  const handleDeleteMember = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to remove team member "${name}"?`)) return;
+    // Merged (Supabase-backed) members must be deleted from team_members too,
+    // or the next sync would re-add them to this list.
+    const rowId = supabaseRowId(id);
+    if (rowId) {
+      try {
+        await removeTeamMember(rowId);
+      } catch (err: any) {
+        setActionNotice({ type: 'error', message: err.message || 'Could not remove the team member. Please try again.' });
+        return;
+      }
     }
+    const updated = teamMembers.filter((m) => m.id !== id);
+    saveTeamMembers(updated);
   };
 
-  const handleToggleStatus = (id: string) => {
+  const handleToggleStatus = async (id: string) => {
+    const member = teamMembers.find((m) => m.id === id);
+    if (!member) return;
+    const nextStatus: 'Active' | 'Disabled' = member.status === 'Active' ? 'Disabled' : 'Active';
+    // Keep the Supabase row in step so a disabled member is not re-activated
+    // by the next sync (listTeamMembers only returns 'active' rows).
+    const rowId = supabaseRowId(id);
+    if (rowId) {
+      try {
+        await updateTeamMemberStatus(rowId, nextStatus === 'Active' ? 'active' : 'disabled');
+      } catch (err: any) {
+        setActionNotice({ type: 'error', message: err.message || 'Could not update the team member. Please try again.' });
+        return;
+      }
+    }
     const updated = teamMembers.map((m) => {
       if (m.id === id) {
-        const nextStatus: 'Active' | 'Disabled' = m.status === 'Active' ? 'Disabled' : 'Active';
         return { ...m, status: nextStatus };
       }
       return m;
@@ -601,7 +688,10 @@ export const TeamManagementView: React.FC = () => {
       {/* Tabs Switcher */}
       <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
         <button
-          onClick={() => setActiveTab('members')}
+          onClick={() => {
+            setActiveTab('members');
+            syncAcceptedMembers();
+          }}
           className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-2 ${
             activeTab === 'members'
               ? 'bg-[#ff5c01] text-white shadow-sm'

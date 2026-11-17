@@ -86,11 +86,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const isAiLocked = !isPremiumUnlocked;
   const isLoyaltyLocked = !isPremiumUnlocked;
   const isAuditLogLocked = !isPremiumUnlocked;
-  // No sidebar item currently maps to these two flags (both are enforced by
-  // PremiumFeatureGuard where the features render); defined here so the
-  // sidebar's lock set covers all 11 Premium-only flags.
-  const isAdvancedPermissionsLocked = !isPremiumUnlocked;
-  const isMultiBranchLocked = !isPremiumUnlocked;
+  // NOTE: the other two Premium-only flags have no sidebar item and are
+  // intentionally not defined here. isAdvancedPermissionsAllowed is the
+  // granular toggles inside Team Management, whose sidebar item is already
+  // locked by isTeamLocked (the identical flag); isMultiBranchAllowed has
+  // no in-app branches screen yet. Both remain listed in
+  // PremiumFeatureGuard's ALL_PREMIUM_FEATURES overview.
 
   // Team Management & Payroll Grouped Children
   const teamChildren = [

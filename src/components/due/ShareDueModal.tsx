@@ -11,7 +11,7 @@ interface ShareDueModalProps {
 }
 
 export const ShareDueModal: React.FC<ShareDueModalProps> = ({ customer, isOpen, onClose }) => {
-  const { settings, user, language, formatCurrency } = useApp();
+  const { settings, user, customers, language, formatCurrency } = useApp();
   const [copied, setCopied] = useState(false);
 
   if (!isOpen || !customer) return null;
@@ -62,8 +62,13 @@ ${storePhone ? `Contact Store: ${storePhone}\n` : ''}Thank you!
     }
   };
 
+  // The customer prop may be stale or partial; resolve the live record the
+  // same way ShareInvoiceModal does and use its email when one exists.
+  const resolvedCustomer = customers.find((c) => c.id === customer.id);
+  const customerEmail = resolvedCustomer?.email || customer.email || '';
+
   const whatsappUrl = `https://api.whatsapp.com/send?phone=${customer.phone ? customer.phone.replace(/[^0-9]/g, '') : ''}&text=${encodeURIComponent(dueStatementText)}`;
-  const emailUrl = `mailto:${customer.email || ''}?subject=${encodeURIComponent(`Due Payment Statement from ${storeName}`)}&body=${encodeURIComponent(dueStatementText)}`;
+  const emailUrl = `mailto:${customerEmail}?subject=${encodeURIComponent(`Due Payment Statement from ${storeName}`)}&body=${encodeURIComponent(dueStatementText)}`;
   const smsUrl = `sms:${customer.phone || ''}?body=${encodeURIComponent(dueStatementText)}`;
 
   return (
@@ -109,16 +114,19 @@ ${storePhone ? `Contact Store: ${storePhone}\n` : ''}Thank you!
               <span>WhatsApp</span>
             </a>
 
-            {/* Email */}
-            <a
-              href={emailUrl}
-              className="p-3 rounded-2xl bg-indigo-500/10 hover:bg-indigo-500 text-indigo-600 hover:text-white border border-indigo-500/20 transition-all flex items-center gap-2.5 font-bold text-xs group"
-            >
-              <div className="w-8 h-8 rounded-xl bg-indigo-500 text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                <Mail className="w-4 h-4" />
-              </div>
-              <span>Email</span>
-            </a>
+            {/* Email — only shown when the customer has an email on file,
+                so it never opens with an empty recipient. */}
+            {customerEmail && (
+              <a
+                href={emailUrl}
+                className="p-3 rounded-2xl bg-indigo-500/10 hover:bg-indigo-500 text-indigo-600 hover:text-white border border-indigo-500/20 transition-all flex items-center gap-2.5 font-bold text-xs group"
+              >
+                <div className="w-8 h-8 rounded-xl bg-indigo-500 text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                  <Mail className="w-4 h-4" />
+                </div>
+                <span>Email</span>
+              </a>
+            )}
 
             {/* SMS */}
             <a

@@ -2,11 +2,7 @@ import React, { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useApp } from '../../context/AppContext';
 import { Language } from '../../types';
-import {
-  SUPPORTED_LANGUAGE_CURRENCY_PAIRS,
-  getMappedCurrencyForLanguage,
-  getMappedLanguageForCurrency,
-} from '../../config/languageCurrency';
+import { SUPPORTED_LANGUAGE_CURRENCY_PAIRS } from '../../config/languageCurrency';
 import { MainWebsiteLogo } from '../common/MainWebsiteLogo';
 import { LanguageSelector } from '../common/LanguageSelector';
 import { getNotificationContent } from '../../services/notificationService';
@@ -75,18 +71,10 @@ export const Header: React.FC<{ onToggleSidebar?: () => void }> = ({ onToggleSid
 
   const handleLanguageChange = (newLang: Language) => {
     setLanguage(newLang);
-    const mappedCurrency = getMappedCurrencyForLanguage(newLang);
-    if (settings.currency !== mappedCurrency) {
-      updateSettings({ currency: mappedCurrency });
-    }
   };
 
   const handleCurrencyChange = (newCurrency: string) => {
     updateSettings({ currency: newCurrency });
-    const mappedLanguage = getMappedLanguageForCurrency(newCurrency);
-    if (language !== mappedLanguage) {
-      setLanguage(mappedLanguage);
-    }
   };
 
   const handleSetTheme = (selectedTheme: 'light' | 'dark' | 'system') => {

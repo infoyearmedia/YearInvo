@@ -194,7 +194,7 @@ interface AppContextType {
   blockUser: (userId: string) => void;
   unblockUser: (userId: string) => void;
   deleteUser: (userId: string) => void;
-  resetUserPassword: (userId: string, newPass: string) => void;
+  resetUserPassword: (userId: string, newPass?: string) => void;
   updateUserPlan: (userId: string, newPlan: SubscriptionPlan, billingPeriod?: BillingCycle) => void;
   updateUserData: (userId: string, data: Partial<UserProfile>) => void;
   refreshUsers: () => Promise<void>;
@@ -2855,7 +2855,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const resetUserPassword = (userId: string, _newPass: string) => {
+  const resetUserPassword = (userId: string, _newPass?: string) => {
     // The frontend cannot set an arbitrary password for another user.
     // Send a Supabase password-reset email to the account instead; the
     // typed new password is intentionally never stored anywhere.

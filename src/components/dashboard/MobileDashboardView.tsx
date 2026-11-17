@@ -56,6 +56,7 @@ export const MobileDashboardView: React.FC = () => {
     t,
     formatNumber,
     formatCurrency,
+    convertMoney,
     dashboardPreferences,
   } = useApp();
 
@@ -114,6 +115,9 @@ export const MobileDashboardView: React.FC = () => {
   // records only (gross profit = sale total minus buying cost of its items).
   // Days/weeks with no sales show 0 because nothing was sold — never
   // invented multipliers of today's sales.
+  // Sales are stored in the store base currency, so each aggregated value
+  // is converted to the display currency with convertMoney before plotting
+  // (e.g. a ৳50 sale plots as 0.40 in USD view, ৳50 in BDT view).
   const saleGrossProfit = (s: { items: { buyingPrice: number; quantity: number }[]; total: number }) =>
     Math.max(
       0,
@@ -129,8 +133,8 @@ export const MobileDashboardView: React.FC = () => {
     const daySales = sales.filter((s) => s.date && s.date.startsWith(dayStr));
     return {
       day: isBn ? dayNamesBn[d.getDay()] : dayNamesEn[d.getDay()],
-      sales: daySales.reduce((sum, s) => sum + (Number(s.total) || 0), 0),
-      profit: daySales.reduce((sum, s) => sum + saleGrossProfit(s), 0),
+      sales: convertMoney(daySales.reduce((sum, s) => sum + (Number(s.total) || 0), 0)),
+      profit: convertMoney(daySales.reduce((sum, s) => sum + saleGrossProfit(s), 0)),
     };
   });
 
@@ -144,8 +148,8 @@ export const MobileDashboardView: React.FC = () => {
     });
     return {
       day: isBn ? `সপ্তাহ ${weekIdx + 1}` : `W${weekIdx + 1}`,
-      sales: weekSales.reduce((sum, s) => sum + (Number(s.total) || 0), 0),
-      profit: weekSales.reduce((sum, s) => sum + saleGrossProfit(s), 0),
+      sales: convertMoney(weekSales.reduce((sum, s) => sum + (Number(s.total) || 0), 0)),
+      profit: convertMoney(weekSales.reduce((sum, s) => sum + saleGrossProfit(s), 0)),
     };
   });
 
@@ -564,8 +568,9 @@ export const MobileDashboardView: React.FC = () => {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E8EEF2" />
                 <XAxis dataKey="day" stroke="#94a3b8" fontSize={10} tickLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} />
+                <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} tickFormatter={(v: number) => formatCurrency(v, { disableConversion: true })} />
                 <Tooltip
+                  formatter={(value, name) => [formatCurrency(Number(value), { disableConversion: true }), name]}
                   contentStyle={{
                     backgroundColor: '#0c0c0e',
                     borderColor: '#1e293b',

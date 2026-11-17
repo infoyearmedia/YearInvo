@@ -11,8 +11,18 @@ export interface LanguageCurrencyPair {
 }
 
 /**
- * Deterministic 1:1 Bi-directional Mapping between the 6 Supported Languages
- * and the 6 Supported Currencies.
+ * Language and currency are INDEPENDENT user settings.
+ *
+ * Changing the language must never change the currency, and changing the
+ * currency must never change the language. The tables below are only:
+ *  (a) the option catalogue for the language/currency dropdowns
+ *      (SUPPORTED_LANGUAGE_CURRENCY_PAIRS), and
+ *  (b) a way to derive INITIAL defaults for a brand-new signup
+ *      (currency from country, language from browser) — see AppContext.
+ * They must NOT be used inside any user-initiated change handler.
+ * The two getMapped* helpers are kept only so existing call sites keep
+ * compiling until their handlers are decoupled; they are deprecated and
+ * no change handler should call them.
  */
 export const SUPPORTED_LANGUAGE_CURRENCY_PAIRS: LanguageCurrencyPair[] = [
   {
@@ -130,14 +140,20 @@ export const CURRENCY_TO_LANGUAGE_MAP: Record<string, Language> = {
 };
 
 /**
- * Helper to get mapped currency for any language
+ * @deprecated Do NOT call from a language-change handler. Language and
+ * currency are independent: selecting a language must never rewrite the
+ * currency. Kept only for initial-default derivation and so existing
+ * imports keep compiling until their handlers are decoupled.
  */
 export function getMappedCurrencyForLanguage(lang: Language): string {
   return LANGUAGE_TO_CURRENCY_MAP[lang] || '৳';
 }
 
 /**
- * Helper to get mapped language for any currency symbol/code
+ * @deprecated Do NOT call from a currency-change handler. Language and
+ * currency are independent: selecting a currency must never rewrite the
+ * language. Kept only for initial-default derivation and so existing
+ * imports keep compiling until their handlers are decoupled.
  */
 export function getMappedLanguageForCurrency(curr: string): Language {
   const clean = (curr || '').trim();

@@ -20,6 +20,7 @@ import {
 } from './supabaseDbService';
 import { supabase } from '../lib/supabase';
 import { offlineDb } from './offlineDb';
+import { syncQueueService } from './syncQueueService';
 import {
   Product,
   Category,
@@ -117,52 +118,77 @@ export async function saveUserCloudCollection(
     return false;
   }
 
-  // 1. Primary persistence directly into Supabase PostgreSQL tables
+  // 1. Primary persistence directly into Supabase PostgreSQL tables.
+  // The real outcome is reported to syncQueueService — it is what drives
+  // the sync indicator, so a failed Supabase write must not be swallowed
+  // here (the old code returned true no matter what).
+  let supabaseOk = true;
+  let hadMappedWrites = false;
   try {
     const items = data.items || [];
+    const rowResults: boolean[] = [];
     if (collectionKey === 'products' && Array.isArray(items)) {
+      hadMappedWrites = true;
       for (const p of items) {
-        await saveSupabaseProduct(userId, p);
+        rowResults.push(await saveSupabaseProduct(userId, p));
       }
     } else if (collectionKey === 'categories' && Array.isArray(items)) {
+      hadMappedWrites = true;
       for (const c of items) {
-        await saveSupabaseCategory(userId, c);
+        rowResults.push(await saveSupabaseCategory(userId, c));
       }
     } else if (collectionKey === 'sales' && Array.isArray(items)) {
+      hadMappedWrites = true;
       for (const s of items) {
-        await saveSupabaseSale(userId, s);
+        rowResults.push(await saveSupabaseSale(userId, s));
       }
     } else if (collectionKey === 'customers' && Array.isArray(items)) {
+      hadMappedWrites = true;
       for (const c of items) {
-        await saveSupabaseCustomer(userId, c);
+        rowResults.push(await saveSupabaseCustomer(userId, c));
       }
     } else if (collectionKey === 'suppliers' && Array.isArray(items)) {
+      hadMappedWrites = true;
       for (const sp of items) {
-        await saveSupabaseSupplier(userId, sp);
+        rowResults.push(await saveSupabaseSupplier(userId, sp));
       }
     } else if (collectionKey === 'expenses' && Array.isArray(items)) {
+      hadMappedWrites = true;
       for (const exp of items) {
-        await saveSupabaseExpense(userId, exp);
+        rowResults.push(await saveSupabaseExpense(userId, exp));
       }
     } else if (collectionKey === 'purchases' && Array.isArray(items)) {
+      hadMappedWrites = true;
       for (const pur of items) {
-        await saveSupabasePurchase(userId, pur);
+        rowResults.push(await saveSupabasePurchase(userId, pur));
       }
     } else if (collectionKey === 'onlineOrders' && Array.isArray(items)) {
+      hadMappedWrites = true;
       for (const o of items) {
-        await saveSupabaseOnlineOrder(userId, o);
+        rowResults.push(await saveSupabaseOnlineOrder(userId, o));
       }
     }
+    if (rowResults.some((r) => r === false)) supabaseOk = false;
 
     // Touch user updated_at in Supabase
-    await supabase.from('users').upsert({
+    const { error: touchError } = await supabase.from('users').upsert({
       id: userId,
       updated_at: new Date().toISOString(),
     });
-    console.log(`[Supabase DB Sync] Successfully saved ${collectionKey} to Supabase.`);
+    // The touch is the only Supabase signal for collections with no table
+    // mapping; for mapped collections the row writes are the verdict.
+    if (!hadMappedWrites && touchError) supabaseOk = false;
+    if (supabaseOk) {
+      console.log(`[Supabase DB Sync] Successfully saved ${collectionKey} to Supabase.`);
+    }
   } catch (sbErr) {
+    supabaseOk = false;
     console.warn(`[Supabase DB Sync] Notice saving ${collectionKey}:`, sbErr);
   }
+  syncQueueService.reportCloudResult(
+    supabaseOk,
+    supabaseOk ? undefined : `Could not save ${collectionKey} to the cloud database.`
+  );
 
   // 2. Non-blocking Firestore save (failsafe, will not throw if Firestore is removed)
   try {
@@ -247,8 +273,12 @@ export function subscribeToUserBusinessData(
       if (orders && orders.length > 0) callbacks.onOnlineOrdersLoaded?.(orders, true);
 
       callbacks.onSyncStatusChanged?.('synced');
+      // Real Supabase load outcome — this is what clears / sets the sync
+      // indicator's error state at login.
+      syncQueueService.reportCloudResult(true);
     } catch (sbLoadErr) {
       console.warn('[Supabase DB Initial Load Notice]:', sbLoadErr);
+      syncQueueService.reportCloudResult(false, 'Could not load data from the cloud database.');
     }
   })();
 

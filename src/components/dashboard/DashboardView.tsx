@@ -44,12 +44,15 @@ import {
 } from 'recharts';
 
 export const DashboardView: React.FC = () => {
-  const { metrics, settings, user, setActiveTab, t, products, sales, language, formatNumber, formatCurrency, dashboardPreferences } = useApp();
+  const { metrics, settings, user, setActiveTab, t, products, sales, language, formatNumber, formatCurrency, convertMoney, dashboardPreferences } = useApp();
   const planName = user?.subscriptionPlan || 'Free';
 
   // Real 7-day sales & gross profit, aggregated from actual sales records
   // (profit = sale total minus buying cost of its items). Days with no sales
   // show 0 because nothing was sold that day — never invented values.
+  // Sales are stored in the store base currency, so each aggregated value
+  // is converted to the display currency with convertMoney before plotting
+  // (e.g. a ৳50 sale plots as 0.40 in USD view, ৳50 in BDT view).
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const salesChartData = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
@@ -61,7 +64,7 @@ export const DashboardView: React.FC = () => {
       (sum, s) => sum + s.items.reduce((itemSum, item) => itemSum + (Number(item.buyingPrice) || 0) * (Number(item.quantity) || 0), 0),
       0
     );
-    return { day: dayNames[d.getDay()], sales: dayTotal, profit: Math.max(0, dayTotal - dayCost) };
+    return { day: dayNames[d.getDay()], sales: convertMoney(dayTotal), profit: convertMoney(Math.max(0, dayTotal - dayCost)) };
   });
   const hasChartData = salesChartData.some((d) => d.sales > 0);
 
@@ -595,8 +598,9 @@ export const DashboardView: React.FC = () => {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                 <XAxis dataKey="day" stroke="#64748b" fontSize={11} tickLine={false} />
-                <YAxis stroke="#64748b" fontSize={11} tickLine={false} />
+                <YAxis stroke="#64748b" fontSize={11} tickLine={false} tickFormatter={(v: number) => formatCurrency(v, { disableConversion: true })} />
                 <Tooltip
+                  formatter={(value, name) => [formatCurrency(Number(value), { disableConversion: true }), name]}
                   contentStyle={{
                     backgroundColor: 'rgba(15, 23, 42, 0.95)',
                     borderColor: 'rgba(255, 255, 255, 0.1)',

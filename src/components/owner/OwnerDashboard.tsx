@@ -157,7 +157,6 @@ export const OwnerDashboard: React.FC = () => {
 
   // Password Reset Modal
   const [resetModalUser, setResetModalUser] = useState<UserProfile | null>(null);
-  const [newPasswordInput, setNewPasswordInput] = useState('123456');
   const [resetSuccessMsg, setResetSuccessMsg] = useState<string | null>(null);
 
   // Confirm Action Modal (Suspend, Block, Delete)
@@ -428,6 +427,29 @@ export const OwnerDashboard: React.FC = () => {
     searchQuery,
   ]);
 
+  // Subscription period helpers (round 2): the request row carries the
+  // Supabase start_date / expiry_date columns, mapped to camelCase
+  // startDate / expiryDate in supabaseDbService. When the request row
+  // has none, fall back to the merchant's live profile dates
+  // (subscriptionExpiresAt / expiryDate / startDate).
+  const getRequestPeriod = (req: SubscriptionRequest) => {
+    const targetUser = allUsers.find((u) => u.id === req.userId || u.email === req.userEmail);
+    return {
+      startDate: req.startDate || targetUser?.startDate || undefined,
+      expiryDate: req.expiryDate || targetUser?.subscriptionExpiresAt || targetUser?.expiryDate || undefined,
+    };
+  };
+
+  // Display-only expiry check: an approved request whose expiry date
+  // has passed is shown as Expired. This does not change req.status.
+  const isRequestExpired = (req: SubscriptionRequest) => {
+    if (req.status !== 'approved') return false;
+    const { expiryDate } = getRequestPeriod(req);
+    if (!expiryDate) return false;
+    const t = new Date(expiryDate).getTime();
+    return !isNaN(t) && t < Date.now();
+  };
+
   // Handle Approve Request with Duplicate Active Check
   const handleInitiateApprove = (req: SubscriptionRequest) => {
     const targetUser = allUsers.find((u) => u.id === req.userId || u.email === req.userEmail);
@@ -530,13 +552,14 @@ export const OwnerDashboard: React.FC = () => {
     setEditUserModal(null);
   };
 
-  // Password Reset Handlers
+  // Password Reset Handler — sends a Supabase password-reset link.
+  // The frontend cannot set a password for another user, so there is
+  // no typed-password field: resetUserPassword emails the user a reset
+  // link and they choose their own new password from that email.
   const handleDirectPasswordReset = (e: React.FormEvent) => {
     e.preventDefault();
     if (!resetModalUser) return;
-    resetUserPassword(resetModalUser.id, newPasswordInput);
-    // resetUserPassword sends a Supabase password-reset email to the
-    // account; it cannot set the typed password directly from the frontend.
+    resetUserPassword(resetModalUser.id);
     setResetSuccessMsg(`Password reset link sent to ${resetModalUser.email}. The user sets their new password from that email.`);
     setTimeout(() => {
       setResetSuccessMsg(null);
@@ -1713,12 +1736,15 @@ export const OwnerDashboard: React.FC = () => {
               </div>
             ) : (
               <div className="divide-y divide-slate-800 border border-slate-800 rounded-xl overflow-hidden">
-                {filteredSubscriptionRequests.map((req) => (
+                {filteredSubscriptionRequests.map((req) => {
+                  const reqPeriod = getRequestPeriod(req);
+                  const reqExpired = isRequestExpired(req);
+                  return (
                   <div key={req.id} className="p-5 bg-slate-950/50 hover:bg-slate-800/40 transition-colors space-y-3">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
-                          <h4 className="font-extrabold text-sm text-white">{req.brandName || 'Store'}</h4>
+                          <h4 className="font-extrabold text-sm text-white">{req.brandName || 'N/A'}</h4>
                           <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold text-[10px] border border-purple-500/30">
                             {req.requestedPlan} Plan
                           </span>
@@ -1730,6 +1756,11 @@ export const OwnerDashboard: React.FC = () => {
                           {req.status === 'approved' && (
                             <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold text-[10px]">
                               ● Active / Approved
+                            </span>
+                          )}
+                          {req.status === 'approved' && reqExpired && (
+                            <span className="px-2 py-0.5 rounded-full bg-amber-900/40 text-amber-300 border border-amber-700/50 font-bold text-[10px]">
+                              ⏱ Expired
                             </span>
                           )}
                           {req.status === 'cancelled' && (
@@ -1749,7 +1780,7 @@ export const OwnerDashboard: React.FC = () => {
                           )}
                         </div>
                         <p className="text-xs text-slate-400 mt-1">
-                          Applicant: <strong className="text-slate-200">{req.userName}</strong> ({req.userEmail}) • UID: <span className="font-mono text-slate-400">{req.userId || 'N/A'}</span>
+                          Applicant: <strong className="text-slate-200">{req.userName || 'Merchant'}</strong> ({req.userEmail}) • UID: <span className="font-mono text-slate-400">{req.userId || 'N/A'}</span>
                         </p>
                       </div>
 
@@ -1806,7 +1837,7 @@ export const OwnerDashboard: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 bg-slate-900/80 p-3 rounded-xl border border-slate-800 text-xs">
+                    <div className="grid grid-cols-2 sm:grid-cols-7 gap-2 bg-slate-900/80 p-3 rounded-xl border border-slate-800 text-xs">
                       <div>
                         <span className="text-slate-500 block text-[10px]">Plan & Cycle</span>
                         <span className="font-bold text-amber-400">{req.requestedPlan} ({req.billingCycle})</span>
@@ -1839,9 +1870,23 @@ export const OwnerDashboard: React.FC = () => {
                             : formatDate(req.requestDate)}
                         </span>
                       </div>
+                      <div>
+                        <span className="text-slate-500 block text-[10px]">Start Date</span>
+                        <span className="font-bold text-slate-300">
+                          {reqPeriod.startDate ? formatDate(reqPeriod.startDate) : '—'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block text-[10px]">Expiry Date</span>
+                        <span className={`font-bold ${reqExpired ? 'text-rose-400' : 'text-slate-300'}`}>
+                          {reqPeriod.expiryDate ? formatDate(reqPeriod.expiryDate) : '—'}
+                          {reqExpired ? ' (Expired)' : ''}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -2259,7 +2304,7 @@ export const OwnerDashboard: React.FC = () => {
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="font-extrabold text-base text-white flex items-center gap-2">
                 <Key className="w-5 h-5 text-indigo-400" />
-                <span>Reset User Password</span>
+                <span>Send Password Reset Link</span>
               </h3>
               <button
                 onClick={() => setResetModalUser(null)}
@@ -2281,15 +2326,8 @@ export const OwnerDashboard: React.FC = () => {
             )}
 
             <form onSubmit={handleDirectPasswordReset} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Set New Password Manually</label>
-                <input
-                  type="text"
-                  required
-                  value={newPasswordInput}
-                  onChange={(e) => setNewPasswordInput(e.target.value)}
-                  className="w-full py-2 px-3 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
-                />
+              <div className="p-3.5 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-xs text-indigo-200 leading-relaxed">
+                A password-reset link will be emailed to <strong className="text-white">{resetModalUser.email}</strong>. The user opens the link and chooses their own new password — the owner cannot set a password for them directly.
               </div>
 
               <div className="flex flex-col gap-2">
@@ -2297,7 +2335,7 @@ export const OwnerDashboard: React.FC = () => {
                   type="submit"
                   className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg cursor-pointer"
                 >
-                  Set Password Directly
+                  Send Reset Link
                 </button>
 
                 <button
@@ -2564,7 +2602,7 @@ export const OwnerDashboard: React.FC = () => {
                 </div>
                 <div>
                   <span className="text-slate-500 block text-[10px]">Applicant Name</span>
-                  <span className="font-bold text-slate-200">{selectedDetailRequest.userName}</span>
+                  <span className="font-bold text-slate-200">{selectedDetailRequest.userName || 'Merchant'}</span>
                 </div>
                 <div>
                   <span className="text-slate-500 block text-[10px]">Email Address</span>
@@ -2619,6 +2657,28 @@ export const OwnerDashboard: React.FC = () => {
                 <div>
                   <span className="text-slate-500 block text-[10px]">Subscription Status</span>
                   <span className="font-bold uppercase text-emerald-400">{selectedDetailRequest.status}</span>
+                  {isRequestExpired(selectedDetailRequest) && (
+                    <span className="ml-2 px-2 py-0.5 rounded-full bg-amber-900/40 text-amber-300 border border-amber-700/50 font-bold text-[10px] normal-case">
+                      ⏱ Expired
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <span className="text-slate-500 block text-[10px]">Subscription Start</span>
+                  <span className="font-bold text-slate-300">
+                    {getRequestPeriod(selectedDetailRequest).startDate
+                      ? formatDate(getRequestPeriod(selectedDetailRequest).startDate)
+                      : '—'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block text-[10px]">Subscription Expiry</span>
+                  <span className={`font-bold ${isRequestExpired(selectedDetailRequest) ? 'text-rose-400' : 'text-slate-300'}`}>
+                    {getRequestPeriod(selectedDetailRequest).expiryDate
+                      ? formatDate(getRequestPeriod(selectedDetailRequest).expiryDate)
+                      : '—'}
+                    {isRequestExpired(selectedDetailRequest) ? ' (Expired)' : ''}
+                  </span>
                 </div>
                 {selectedDetailRequest.currentPeriodStart && (
                   <div>

@@ -3,11 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { getDisplayBrandName } from '../../utils/brand';
 import { MainWebsiteLogo } from '../common/MainWebsiteLogo';
 import { compressImage } from '../../utils/imageCompressor';
-import {
-  SUPPORTED_LANGUAGE_CURRENCY_PAIRS,
-  getMappedCurrencyForLanguage,
-  getMappedLanguageForCurrency,
-} from '../../config/languageCurrency';
+import { SUPPORTED_LANGUAGE_CURRENCY_PAIRS } from '../../config/languageCurrency';
 import { Settings, Save, Shield, Download, Upload, Store, DollarSign, Receipt, Users, Camera, Trash2, Image, User, SlidersHorizontal, ShoppingBag, Truck, Lock, Crown, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { isOnlineBusinessEligible, defaultOnlineBusinessSettings } from '../../types';
 import { OnlineUpgradeModal } from '../online/OnlineUpgradeModal';
@@ -340,8 +336,7 @@ export const SettingsView: React.FC = () => {
                 value={formData.language}
                 onChange={(e) => {
                   const newLang = e.target.value as any;
-                  const mappedCurr = getMappedCurrencyForLanguage(newLang);
-                  setFormData({ ...formData, language: newLang, currency: mappedCurr });
+                  setFormData({ ...formData, language: newLang });
                 }}
                 className="w-full px-3.5 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold cursor-pointer"
               >
@@ -359,8 +354,7 @@ export const SettingsView: React.FC = () => {
                 value={formData.currency || '৳'}
                 onChange={(e) => {
                   const newCurr = e.target.value;
-                  const mappedLang = getMappedLanguageForCurrency(newCurr);
-                  setFormData({ ...formData, currency: newCurr, language: mappedLang });
+                  setFormData({ ...formData, currency: newCurr });
                 }}
                 className="w-full px-3.5 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold cursor-pointer"
               >
