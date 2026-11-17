@@ -284,6 +284,12 @@ export const translations: Record<Language, Record<string, string>> = {
 
     // Quick Sale
     quickSaleTitle: 'Quick Sale',
+    quickSaleSubtitle: 'Fast checkout for counter sales and walk-in customers.',
+    searchProductPlaceholder: 'Search products by name, SKU or barcode...',
+    posSystem: 'POS & Sell',
+    subscriptionPlan: 'Subscription Plan',
+    cart: 'Cart',
+    cartEmpty: 'Cart is empty. Select products to proceed.',
     quickItemPicker: 'Quick Item Picker',
     itemsAvailable: 'Items Available',
     searchItemPlaceholder: 'Search item by name or scan code...',
@@ -838,6 +844,12 @@ export const translations: Record<Language, Record<string, string>> = {
 
     // Quick Sale
     quickSaleTitle: 'দ্রুত বিক্রয়',
+    quickSaleSubtitle: 'কাউন্টার সেল ও ওয়াক-ইন কাস্টমারের জন্য দ্রুত চেকআউট।',
+    searchProductPlaceholder: 'নাম, SKU বা বারকোড দিয়ে প্রোডাক্ট খুঁজুন...',
+    posSystem: 'POS ও সেল',
+    subscriptionPlan: 'সাবস্ক্রিপশন প্ল্যান',
+    cart: 'কার্ট',
+    cartEmpty: 'কার্ট খালি। এগিয়ে যেতে প্রোডাক্ট নির্বাচন করুন।',
     quickItemPicker: 'দ্রুত পণ্য নির্বাচন',
     itemsAvailable: 'টি পণ্য উপলব্ধ',
     searchItemPlaceholder: 'নাম বা কোড দিয়ে খুঁজুন...',

@@ -34,8 +34,17 @@ import {
   EyeOff,
 } from 'lucide-react';
 
+const GoogleIcon: React.FC = () => (
+  <svg className="w-5 h-5 shrink-0" viewBox="0 0 48 48" aria-hidden="true">
+    <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303C33.654 32.657 29.223 36 24 36c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" />
+    <path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" />
+    <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z" />
+    <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571.001-.001.002-.001.003-.002l6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z" />
+  </svg>
+);
+
 export const LoginView: React.FC = () => {
-  const { login, signup, sendFirebasePasswordReset, settings, language, setLanguage, t, enterDemoMode, exchangeRates } = useApp();
+  const { login, signup, loginWithGoogle, sendLoginCode, verifyLoginCode, sendFirebasePasswordReset, settings, language, setLanguage, t, enterDemoMode, exchangeRates } = useApp();
 
   const [mode, setMode] = useState<'landing' | 'login' | 'signup' | 'forgot'>('landing');
   const [email, setEmail] = useState('');
@@ -73,7 +82,61 @@ export const LoginView: React.FC = () => {
 
   const [error, setError] = useState('');
 
+  // Email OTP code login state (Supabase built-in OTP)
+  const [otpMode, setOtpMode] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [otpMsg, setOtpMsg] = useState('');
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
   const isBn = language === 'bn';
+
+  const handleGoogleSignIn = async () => {
+    setError('');
+    setGoogleLoading(true);
+    const res = await loginWithGoogle();
+    setGoogleLoading(false);
+    if (!res.success) {
+      setError(res.message || (isBn ? 'Google দিয়ে লগইন ব্যর্থ হয়েছে। আবার চেষ্টা করুন।' : 'Google sign-in failed. Please try again.'));
+    }
+    // On success the browser redirects to Google; the auth listener
+    // completes the session when the user returns.
+  };
+
+  const handleSendLoginCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setOtpMsg('');
+    if (!email.trim()) {
+      setError(isBn ? 'অনুগ্রহ করে ইমেইল এড্রেস প্রদান করুন' : 'Please enter your email address');
+      return;
+    }
+    setOtpLoading(true);
+    const res = await sendLoginCode(email);
+    setOtpLoading(false);
+    if (!res.success) {
+      setError(res.message || (isBn ? 'কোড পাঠানো যায়নি। আবার চেষ্টা করুন।' : 'Failed to send code. Please try again.'));
+    } else {
+      setOtpSent(true);
+      setOtpMsg(isBn ? '৬ সংখ্যার কোড আপনার ইমেইলে পাঠানো হয়েছে। ইনবক্স চেক করুন।' : 'A 6-digit code has been sent to your email. Please check your inbox.');
+    }
+  };
+
+  const handleVerifyLoginCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    if (!otpCode.trim()) {
+      setError(isBn ? '৬ সংখ্যার কোডটি লিখুন' : 'Please enter the 6-digit code');
+      return;
+    }
+    setOtpLoading(true);
+    const res = await verifyLoginCode(email, otpCode.trim());
+    setOtpLoading(false);
+    if (!res.success) {
+      setError(res.message || (isBn ? 'ভুল কোড। আবার চেষ্টা করুন।' : 'Invalid code. Please try again.'));
+    }
+  };
 
   // Signup plan prices follow the selected currency — same pricing engine
   // as the landing pricing section (never a hardcoded ৳ amount).
@@ -207,6 +270,7 @@ export const LoginView: React.FC = () => {
                   </div>
                 )}
 
+                {!otpMode ? (
                 <form onSubmit={handleLoginSubmit} className="space-y-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
@@ -278,6 +342,113 @@ export const LoginView: React.FC = () => {
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </form>
+                ) : (
+                <form onSubmit={otpSent ? handleVerifyLoginCode : handleSendLoginCode} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Email Address *
+                    </label>
+                    <div className="relative">
+                      <Mail className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="store@example.com"
+                        className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-600"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {otpMsg && (
+                    <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-medium">
+                      {otpMsg}
+                    </div>
+                  )}
+
+                  {otpSent && (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        {isBn ? '৬ সংখ্যার কোড *' : '6-Digit Code *'}
+                      </label>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={6}
+                        value={otpCode}
+                        onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, ''))}
+                        placeholder="123456"
+                        className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm text-center tracking-[0.5em] text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-600"
+                        required
+                      />
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={otpLoading}
+                    className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20 mt-2 cursor-pointer disabled:opacity-50"
+                  >
+                    <span>
+                      {otpLoading
+                        ? (isBn ? 'পাঠানো হচ্ছে...' : 'Sending...')
+                        : otpSent
+                        ? (isBn ? 'যাচাই করুন ও লগইন করুন' : 'Verify & Sign In')
+                        : (isBn ? 'কোড পাঠান' : 'Send Code')}
+                    </span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+
+                  {otpSent && (
+                    <button
+                      type="button"
+                      onClick={handleSendLoginCode}
+                      disabled={otpLoading}
+                      className="w-full text-xs font-bold text-indigo-600 hover:underline cursor-pointer disabled:opacity-50"
+                    >
+                      {isBn ? 'কোড পাননি? আবার পাঠান' : "Didn't get the code? Resend"}
+                    </button>
+                  )}
+                </form>
+                )}
+
+                {/* Divider */}
+                <div className="flex items-center gap-3 my-5">
+                  <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800" />
+                  <span className="text-[11px] font-bold text-slate-400">{isBn ? 'অথবা' : 'or'}</span>
+                  <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800" />
+                </div>
+
+                {/* Continue with Google */}
+                <button
+                  type="button"
+                  onClick={handleGoogleSignIn}
+                  disabled={googleLoading}
+                  className="w-full py-3 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 font-bold rounded-xl text-sm transition-all flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50"
+                >
+                  <GoogleIcon />
+                  <span>{googleLoading ? (isBn ? 'Google খুলছে...' : 'Opening Google...') : (isBn ? 'Google দিয়ে চালিয়ে যান' : 'Continue with Google')}</span>
+                </button>
+
+                {/* Email code login toggle */}
+                <div className="mt-4 text-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setError('');
+                      setOtpMsg('');
+                      setOtpSent(false);
+                      setOtpCode('');
+                      setOtpMode((prev) => !prev);
+                    }}
+                    className="text-xs font-bold text-indigo-600 hover:underline cursor-pointer"
+                  >
+                    {otpMode
+                      ? (isBn ? '← পাসওয়ার্ড দিয়ে লগইন করুন' : '← Back to password login')
+                      : (isBn ? 'ইমেইল কোড দিয়ে লগইন করুন' : 'Login with email code instead')}
+                  </button>
+                </div>
 
                 <div className="mt-6 pt-5 border-t border-slate-200 dark:border-slate-800 text-center">
                   <button
@@ -455,6 +626,23 @@ export const LoginView: React.FC = () => {
                     )}
                   </div>
                 )}
+
+                {/* Continue with Google — creates the account on first sign-in */}
+                <button
+                  type="button"
+                  onClick={handleGoogleSignIn}
+                  disabled={googleLoading}
+                  className="w-full py-3 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 font-bold rounded-xl text-sm transition-all flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50"
+                >
+                  <GoogleIcon />
+                  <span>{googleLoading ? (isBn ? 'Google খুলছে...' : 'Opening Google...') : (isBn ? 'Google দিয়ে অ্যাকাউন্ট তৈরি করুন' : 'Sign up with Google')}</span>
+                </button>
+
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800" />
+                  <span className="text-[11px] font-bold text-slate-400">{isBn ? 'অথবা ইমেইল দিয়ে' : 'or with email'}</span>
+                  <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800" />
+                </div>
 
                 <form onSubmit={handleSignupSubmit} className="space-y-4">
                   {/* 1. Your Name * */}

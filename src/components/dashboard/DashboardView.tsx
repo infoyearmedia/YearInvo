@@ -383,7 +383,7 @@ export const DashboardView: React.FC = () => {
           {/* Below Store Name: Managing your business with Year Invo by Year Media */}
           <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-medium leading-relaxed space-y-0.5">
             <p>Managing your business with <span className="font-bold text-[#ff5c01]">Year Invo</span></p>
-            <p className="text-xs text-slate-400 dark:text-slate-500 font-normal">by Year Media</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-normal">by Year Media</p>
           </div>
         </div>
 
@@ -518,7 +518,7 @@ export const DashboardView: React.FC = () => {
             {/* Metrics pills */}
             <div className="flex flex-wrap items-center gap-3">
               <div className="px-3.5 py-2 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-amber-500/20 shadow-xs">
-                <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                <p className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
                   {language === 'bn' ? 'মোট বিনিয়োগ' : 'Total Invested'}
                 </p>
                 <p className="text-sm font-black text-emerald-600 dark:text-emerald-400">
@@ -527,7 +527,7 @@ export const DashboardView: React.FC = () => {
               </div>
 
               <div className="px-3.5 py-2 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-amber-500/20 shadow-xs">
-                <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                <p className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
                   {language === 'bn' ? 'মূলধন উত্তোলন' : 'Total Withdrawn'}
                 </p>
                 <p className="text-sm font-black text-rose-600 dark:text-rose-400">
@@ -536,7 +536,7 @@ export const DashboardView: React.FC = () => {
               </div>
 
               <div className="px-3.5 py-2 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-md shadow-amber-500/20">
-                <p className="text-[10px] font-bold text-amber-100 uppercase tracking-wider">
+                <p className="text-[10px] font-bold text-white uppercase tracking-wider">
                   {language === 'bn' ? 'বর্তমান মূলধন' : 'Current Capital'}
                 </p>
                 <p className="text-sm font-black text-white">
@@ -561,7 +561,7 @@ export const DashboardView: React.FC = () => {
               <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100">
                 {language === 'bn' ? 'বিক্রয় ও লাভ ট্রেন্ড' : 'Weekly Sales & Profit Revenue'}
               </h3>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">7-Day Sales Performance</p>
+              <p className="text-[11px] text-slate-600 dark:text-slate-400">7-Day Sales Performance</p>
             </div>
             <div className="flex gap-3 text-[10px] font-bold text-slate-600 dark:text-slate-400">
               <span className="flex items-center gap-1.5">
@@ -659,7 +659,7 @@ export const DashboardView: React.FC = () => {
 
         {featureGroups.map((group, idx) => (
           <div key={idx} className="space-y-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 pl-1">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-500 pl-1">
               {group.title}
             </h3>
 

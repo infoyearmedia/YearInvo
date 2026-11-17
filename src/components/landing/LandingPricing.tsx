@@ -339,11 +339,11 @@ export const LandingPricing: React.FC<LandingPricingProps> = ({ onOpenSignup }) 
                     ))}
 
                     {plan.notIncluded.length > 0 && (
-                      <div className="pt-2 space-y-2 opacity-50">
+                      <div className="pt-2 space-y-2">
                         {plan.notIncluded.map((feature, fIdx) => (
                           <div
                             key={fIdx}
-                            className="flex items-start gap-2.5 text-xs text-slate-400 line-through"
+                            className="flex items-start gap-2.5 text-xs text-slate-500 dark:text-slate-400 line-through"
                           >
                             <span className="w-4 h-4 text-center shrink-0">—</span>
                             <span>{feature}</span>

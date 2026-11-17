@@ -82,7 +82,7 @@ export const LandingHeader: React.FC<LandingHeaderProps> = ({
               <button
                 key={item.id}
                 onClick={() => handleNavClick(item.id)}
-                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
                   isActive
                     ? 'bg-indigo-500/10 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-500/20'
                     : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
@@ -170,7 +170,7 @@ export const LandingHeader: React.FC<LandingHeaderProps> = ({
               <button
                 key={item.id}
                 onClick={() => handleNavClick(item.id)}
-                className={`text-left px-3 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                className={`text-left px-3 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
                   activeSection === item.id
                     ? 'bg-indigo-500/10 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 font-extrabold'
                     : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60'

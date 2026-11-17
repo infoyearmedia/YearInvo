@@ -67,14 +67,14 @@ export const SyncStatusIndicator: React.FC<SyncStatusIndicatorProps> = ({
         id="header-sync-status-indicator"
         className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold select-none transition-all duration-200 border ${
           !isOnline
-            ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
+            ? 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-300'
             : status === 'syncing' || isManualSyncing
-            ? 'bg-sky-500/10 border-sky-500/30 text-sky-300 animate-pulse'
+            ? 'bg-sky-500/10 border-sky-500/30 text-sky-600 dark:text-sky-300 animate-pulse'
             : status === 'error'
-            ? 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+            ? 'bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-300'
             : pendingCount > 0
-            ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
-            : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+            ? 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-300'
+            : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
         } ${className}`}
         title={
           !isOnline

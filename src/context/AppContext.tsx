@@ -162,6 +162,9 @@ interface AppContextType {
   isEmailVerified: boolean;
   login: (email: string, pass: string) => Promise<{ success: boolean; message?: string; requiresEmailVerification?: boolean }>;
   signup: (data: Partial<UserProfile> & { password?: string }) => Promise<{ success: boolean; message?: string; requiresEmailVerification?: boolean }>;
+  loginWithGoogle: () => Promise<{ success: boolean; message?: string }>;
+  sendLoginCode: (email: string) => Promise<{ success: boolean; message?: string }>;
+  verifyLoginCode: (email: string, token: string) => Promise<{ success: boolean; message?: string }>;
   sendVerificationOtp: (email?: string, name?: string) => Promise<{ success: boolean; message: string; cooldownRemaining?: number }>;
   verifyEmailOtp: (code: string, email?: string) => Promise<{ success: boolean; message?: string }>;
   resendEmailVerification: () => Promise<{ success: boolean; message: string; cooldownRemaining?: number }>;
@@ -2565,6 +2568,78 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       console.warn('[Supabase Auth Notice] Signup notice:', error?.message || error);
       let message = error.message || 'Failed to create account.';
       return { success: false, message };
+    }
+  };
+
+  // Sign in with Google via Supabase OAuth. The Google provider must be
+  // enabled in Supabase Auth settings with a Google Cloud OAuth client;
+  // until then this returns the provider error. On success the browser
+  // redirects to Google and the onAuthStateChange listener completes the
+  // session (syncSupabaseProfile) when the user returns.
+  const loginWithGoogle = async (): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: window.location.origin },
+      });
+      if (error) {
+        console.warn('[Supabase Auth Google Error]:', error.message);
+        return { success: false, message: error.message };
+      }
+      return { success: true };
+    } catch (err: any) {
+      console.warn('[Supabase Auth Google Notice]:', err?.message || err);
+      return { success: false, message: err?.message || 'Google sign-in failed.' };
+    }
+  };
+
+  // Send a 6-digit email OTP login code via Supabase Auth (built-in email
+  // OTP — no backend API needed). Only works for existing accounts.
+  const sendLoginCode = async (emailInput: string): Promise<{ success: boolean; message?: string }> => {
+    const cleanEmail = (emailInput || '').trim().toLowerCase();
+    if (!cleanEmail) {
+      return { success: false, message: 'Please enter your email address.' };
+    }
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: cleanEmail,
+        options: { shouldCreateUser: false },
+      });
+      if (error) {
+        console.warn('[Supabase Auth OTP Send Error]:', error.message);
+        return { success: false, message: error.message };
+      }
+      return { success: true };
+    } catch (err: any) {
+      console.warn('[Supabase Auth OTP Send Notice]:', err?.message || err);
+      return { success: false, message: err?.message || 'Failed to send login code.' };
+    }
+  };
+
+  // Verify a 6-digit email OTP login code and complete the session.
+  const verifyLoginCode = async (emailInput: string, token: string): Promise<{ success: boolean; message?: string }> => {
+    const cleanEmail = (emailInput || '').trim().toLowerCase();
+    const cleanToken = (token || '').trim();
+    if (!cleanEmail || !cleanToken) {
+      return { success: false, message: 'Email and 6-digit code are required.' };
+    }
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email: cleanEmail,
+        token: cleanToken,
+        type: 'email',
+      });
+      if (error) {
+        console.warn('[Supabase Auth OTP Verify Error]:', error.message);
+        return { success: false, message: error.message };
+      }
+      if (data.user) {
+        await syncSupabaseProfile(data.user);
+      }
+      return { success: true };
+    } catch (err: any) {
+      console.warn('[Supabase Auth OTP Verify Notice]:', err?.message || err);
+      return { success: false, message: err?.message || 'Failed to verify login code.' };
     }
   };
 
@@ -6175,6 +6250,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isEmailVerified,
         login,
         signup,
+        loginWithGoogle,
+        sendLoginCode,
+        verifyLoginCode,
         sendVerificationOtp,
         verifyEmailOtp,
         resendEmailVerification,

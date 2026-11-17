@@ -34,14 +34,14 @@ export const RetailInventoryAnimation: React.FC<RetailInventoryAnimationProps> =
   ];
 
   return (
-    <div className="relative w-full max-w-[560px] mx-auto lg:max-w-none pb-8 pr-2">
+    <div className="relative w-full max-w-[560px] mx-auto lg:max-w-none pb-4 pr-2">
       {/* ========================================================= */}
       {/* BACK: light A4 invoice card with green PAID stamp         */}
       {/* ========================================================= */}
       <motion.div
         animate={{ y: [0, -6, 0], rotate: [2.5, 2, 2.5] }}
         transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute top-0 right-0 sm:right-2 z-0 w-56 sm:w-64 bg-slate-50 border border-slate-200 rounded-2xl p-4 shadow-xl rotate-[2.5deg]"
+        className="absolute top-0 right-0 sm:right-2 z-0 w-48 sm:w-64 bg-slate-50 border border-slate-200 rounded-2xl p-4 shadow-xl rotate-[2.5deg]"
       >
         <div className="flex items-center justify-between pb-2 border-b border-slate-200">
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
@@ -78,7 +78,7 @@ export const RetailInventoryAnimation: React.FC<RetailInventoryAnimationProps> =
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="relative z-10 mt-16 sm:mt-20 mr-6 sm:mr-16 bg-[#131A3A] border border-white/10 rounded-3xl p-4 sm:p-5 shadow-2xl shadow-black/50"
+        className="relative z-10 mt-44 mr-6 sm:mr-16 bg-[#131A3A] border border-white/10 rounded-3xl p-4 sm:p-5 shadow-2xl shadow-black/50"
       >
         {/* Card header */}
         <div className="flex items-center justify-between pb-3 border-b border-white/10">
@@ -155,10 +155,10 @@ export const RetailInventoryAnimation: React.FC<RetailInventoryAnimationProps> =
       <motion.div
         animate={{ y: [0, -7, 0], rotate: [-2, -1.5, -2] }}
         transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute -bottom-1 right-0 sm:right-4 z-20 w-40 sm:w-44 bg-white rounded-xl p-3 shadow-2xl rotate-[-2deg] text-slate-900"
+        className="relative z-20 -mt-4 ml-auto mr-2 sm:mr-6 w-40 sm:w-44 bg-white rounded-xl p-3 shadow-2xl rotate-[-2deg] text-slate-900"
       >
-        <p className="text-[10px] font-black uppercase tracking-wider text-center text-slate-500">
-          {brandName.slice(0, 18)}
+        <p className="text-[9px] font-black uppercase tracking-wide text-center text-slate-500 truncate">
+          {brandName}
         </p>
         <p className="text-center text-[9px] text-slate-400 pb-1.5 border-b border-dashed border-slate-300">
           {isBn ? 'থার্মাল রসিদ' : 'Thermal Receipt'}
@@ -182,7 +182,7 @@ export const RetailInventoryAnimation: React.FC<RetailInventoryAnimationProps> =
       <motion.div
         animate={{ y: [0, -8, 0] }}
         transition={{ duration: 5.5, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute top-24 -left-1 sm:left-0 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#0F172A] border border-white/15 text-white text-[11px] font-bold shadow-xl"
+        className="absolute top-3 left-0 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#0F172A] border border-white/15 text-white text-[11px] font-bold shadow-xl"
       >
         <ScanBarcode className="w-3.5 h-3.5 text-indigo-400" />
         {isBn ? 'বারকোড স্ক্যান হয়েছে' : 'Barcode scanned'}
@@ -191,7 +191,7 @@ export const RetailInventoryAnimation: React.FC<RetailInventoryAnimationProps> =
       <motion.div
         animate={{ y: [0, 7, 0] }}
         transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute bottom-16 -left-1 sm:left-2 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#0F172A] border border-white/15 text-white text-[11px] font-bold shadow-xl"
+        className="absolute bottom-4 left-0 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#0F172A] border border-white/15 text-white text-[11px] font-bold shadow-xl"
       >
         <Cloud className="w-3.5 h-3.5 text-emerald-400" />
         {isBn ? 'ক্লাউডে সিঙ্ক হয়েছে' : 'Synced to cloud'}
