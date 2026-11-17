@@ -159,7 +159,7 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({
             <div className="space-y-2 text-xs">
               <p className="flex items-center gap-2">
                 <Mail className="w-3.5 h-3.5 text-indigo-500" />
-                <span>teamstock07@gmail.com</span>
+                <span>yearinvo@gmail.com</span>
               </p>
               <p className="flex items-center gap-2">
                 <Phone className="w-3.5 h-3.5 text-emerald-400" />

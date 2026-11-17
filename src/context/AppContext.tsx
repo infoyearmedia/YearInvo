@@ -688,10 +688,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [user]);
 
-  // Helper to check if user is Platform Admin (teamstock07@gmail.com)
+  // Helper to check if user is Platform Admin (yearinvo@gmail.com)
   const isTeamStockAdmin = (emailStr?: string | null) => {
     if (!emailStr) return false;
-    return emailStr.trim().toLowerCase() === 'teamstock07@gmail.com';
+    return emailStr.trim().toLowerCase() === 'yearinvo@gmail.com';
   };
 
   // Helper to load and sync authenticated user profile from Supabase

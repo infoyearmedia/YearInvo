@@ -47,7 +47,7 @@ export const getDisplayBrandName = (
 export const isTeamStockAdmin = (email?: string, role?: string): boolean => {
   if (!email && !role) return false;
   const em = email?.toLowerCase().trim();
-  return em === 'teamstock07@gmail.com' || role === 'PlatformOwner' || role === 'SuperAdmin';
+  return em === 'yearinvo@gmail.com' || role === 'PlatformOwner' || role === 'SuperAdmin';
 };
 
 

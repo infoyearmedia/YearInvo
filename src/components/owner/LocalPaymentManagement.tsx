@@ -40,7 +40,7 @@ export const LocalPaymentManagement: React.FC<LocalPaymentManagementProps> = ({
   const { settings, updateSettings, user, t } = useApp();
 
   const isPlatformSuperAdmin =
-    user?.email?.toLowerCase().trim() === 'teamstock07@gmail.com' ||
+    user?.email?.toLowerCase().trim() === 'yearinvo@gmail.com' ||
     user?.role === 'PlatformOwner' ||
     user?.role === 'Owner';
 

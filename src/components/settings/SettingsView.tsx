@@ -623,7 +623,7 @@ export const SettingsView: React.FC = () => {
       </form>
 
       {/* Local Payment Management (Strictly for Owner/Admin) */}
-      {(user?.role === 'Owner' || user?.role === 'PlatformOwner' || user?.email?.toLowerCase().trim() === 'teamstock07@gmail.com') && (
+      {(user?.role === 'Owner' || user?.role === 'PlatformOwner' || user?.email?.toLowerCase().trim() === 'yearinvo@gmail.com') && (
         <div className="pt-2">
           <LocalPaymentManagement />
         </div>

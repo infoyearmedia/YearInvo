@@ -285,7 +285,7 @@ export const LandingSupport: React.FC<LandingSupportProps> = ({ onOpenSignup, on
                 </div>
                 <div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase">Email Support</p>
-                  <p className="text-xs font-bold text-slate-900 dark:text-white">teamstock07@gmail.com</p>
+                  <p className="text-xs font-bold text-slate-900 dark:text-white">yearinvo@gmail.com</p>
                   <p className="text-[10px] text-slate-500">support@yearinvo.com</p>
                 </div>
               </div>

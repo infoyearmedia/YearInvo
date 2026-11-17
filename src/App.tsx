@@ -98,7 +98,7 @@ const MainLayout: React.FC = () => {
   }
 
   // Enforce Email Verification: Show EmailVerificationPrompt screen until email is verified
-  const isAdminUser = user.email?.trim().toLowerCase() === 'teamstock07@gmail.com';
+  const isAdminUser = user.email?.trim().toLowerCase() === 'yearinvo@gmail.com';
   if (!isAdminUser && !isEmailVerified && !user.verifiedEmail) {
     return <EmailVerificationPrompt />;
   }
@@ -357,7 +357,7 @@ const MainLayout: React.FC = () => {
       case 'about':
         return <AboutView />;
       case 'owner':
-        if (user?.email?.toLowerCase().trim() === 'teamstock07@gmail.com' || user?.role === 'PlatformOwner') {
+        if (user?.email?.toLowerCase().trim() === 'yearinvo@gmail.com' || user?.role === 'PlatformOwner') {
           return <OwnerDashboard />;
         }
         return <DashboardView />;

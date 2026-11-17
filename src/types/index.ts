@@ -1131,7 +1131,7 @@ export const isOnlineBusinessEligible = (
 
   // Platform admin is always eligible
   const isSuperAdmin =
-    user.email?.toLowerCase().trim() === 'teamstock07@gmail.com' ||
+    user.email?.toLowerCase().trim() === 'yearinvo@gmail.com' ||
     user.role === 'PlatformOwner';
   if (isSuperAdmin) return { eligible: true };
 

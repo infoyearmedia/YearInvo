@@ -70,7 +70,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const canAccessSettings = role === 'Owner' || role === 'Manager' || role === 'PlatformOwner';
 
   const isPlatformSuperAdmin =
-    user?.email?.toLowerCase().trim() === 'teamstock07@gmail.com' ||
+    user?.email?.toLowerCase().trim() === 'yearinvo@gmail.com' ||
     user?.role === 'PlatformOwner';
 
   // Feature locking based on exact 3 plans (10 features require Premium)
