@@ -2572,7 +2572,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // Send a 6-digit email OTP login code via Supabase Auth (built-in email
+  // Send an email OTP login code via Supabase Auth (built-in email
   // OTP — no backend API needed). Only works for existing accounts.
   const sendLoginCode = async (emailInput: string): Promise<{ success: boolean; message?: string }> => {
     const cleanEmail = (emailInput || '').trim().toLowerCase();
@@ -2595,12 +2595,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // Verify a 6-digit email OTP login code and complete the session.
+  // Verify an email OTP login code and complete the session.
   const verifyLoginCode = async (emailInput: string, token: string): Promise<{ success: boolean; message?: string }> => {
     const cleanEmail = (emailInput || '').trim().toLowerCase();
     const cleanToken = (token || '').trim();
     if (!cleanEmail || !cleanToken) {
-      return { success: false, message: 'Email and 6-digit code are required.' };
+      return { success: false, message: 'Email and verification code are required.' };
     }
     try {
       const { data, error } = await supabase.auth.verifyOtp({

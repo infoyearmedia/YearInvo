@@ -119,7 +119,7 @@ export const LoginView: React.FC = () => {
       setError(res.message || (isBn ? 'কোড পাঠানো যায়নি। আবার চেষ্টা করুন।' : 'Failed to send code. Please try again.'));
     } else {
       setOtpSent(true);
-      setOtpMsg(isBn ? '৬ সংখ্যার কোড আপনার ইমেইলে পাঠানো হয়েছে। ইনবক্স চেক করুন।' : 'A 6-digit code has been sent to your email. Please check your inbox.');
+      setOtpMsg(isBn ? 'যাচাইকরণ কোড আপনার ইমেইলে পাঠানো হয়েছে। ইনবক্স চেক করুন।' : 'A verification code has been sent to your email. Please check your inbox.');
     }
   };
 
@@ -127,7 +127,7 @@ export const LoginView: React.FC = () => {
     e.preventDefault();
     setError('');
     if (!otpCode.trim()) {
-      setError(isBn ? '৬ সংখ্যার কোডটি লিখুন' : 'Please enter the 6-digit code');
+      setError(isBn ? 'যাচাইকরণ কোডটি লিখুন' : 'Please enter the verification code');
       return;
     }
     setOtpLoading(true);
@@ -370,15 +370,15 @@ export const LoginView: React.FC = () => {
                   {otpSent && (
                     <div>
                       <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                        {isBn ? '৬ সংখ্যার কোড *' : '6-Digit Code *'}
+                        {isBn ? 'যাচাইকরণ কোড *' : 'Verification Code *'}
                       </label>
                       <input
                         type="text"
                         inputMode="numeric"
-                        maxLength={6}
+                        maxLength={8}
                         value={otpCode}
                         onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, ''))}
-                        placeholder="123456"
+                        placeholder="12345678"
                         className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm text-center tracking-[0.5em] text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-600"
                         required
                       />
