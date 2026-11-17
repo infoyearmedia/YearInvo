@@ -60,9 +60,6 @@ export const AiInsightsView: React.FC = () => {
                 <Clock className="w-3.5 h-3.5" />
                 Coming Soon
               </span>
-              <span className="px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-200 text-xs font-bold">
-                Gemini AI Powered
-              </span>
             </div>
             <span className="text-xs text-indigo-300/80 font-mono">v2.0 Next Generation</span>
           </div>

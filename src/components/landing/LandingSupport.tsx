@@ -3,12 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useApp } from '../../context/AppContext';
 import {
   HelpCircle,
-  MessageSquare,
   Mail,
-  Phone,
   ChevronDown,
-  Send,
-  CheckCircle2,
   BookOpen,
   QrCode,
   Printer,
@@ -25,27 +21,6 @@ export const LandingSupport: React.FC<LandingSupportProps> = ({ onOpenSignup, on
   const isBn = language === 'bn';
 
   const [openFaq, setOpenFaq] = useState<number | null>(0);
-
-  // Contact form states
-  const [formName, setFormName] = useState('');
-  const [formEmail, setFormEmail] = useState('');
-  const [formStore, setFormStore] = useState('');
-  const [formMsg, setFormMsg] = useState('');
-  const [submitted, setSubmitted] = useState(false);
-
-  const handleContactSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (formName && formEmail && formMsg) {
-      setSubmitted(true);
-      setTimeout(() => {
-        setFormName('');
-        setFormEmail('');
-        setFormStore('');
-        setFormMsg('');
-        setSubmitted(false);
-      }, 4000);
-    }
-  };
 
   const helpTopics = [
     {
@@ -74,8 +49,8 @@ export const LandingSupport: React.FC<LandingSupportProps> = ({ onOpenSignup, on
     {
       q: isBn ? 'YearInvo সফটওয়্যার কি সম্পূর্ণ ফ্রি ব্যবহার করা যায়?' : 'Is YearInvo really free to try?',
       a: isBn
-        ? 'হ্যাঁ! আমাদের Free Starter Plan ১ মাসের জন্য সম্পূর্ণ ফ্রি। আপনি ১০০টি প্রোডাক্ট পর্যন্ত কোনো ফি ছাড়াই ট্রায়াল দিতে পারবেন।'
-        : 'Yes! Our Free Starter Plan includes a 1 month free trial with no credit card required. You can manage up to 100 products during trial.',
+        ? 'হ্যাঁ! আমাদের Free Starter Plan ১ মাসের জন্য সম্পূর্ণ ফ্রি। আপনি ৫টি প্রোডাক্ট পর্যন্ত কোনো ফি ছাড়াই ট্রায়াল দিতে পারবেন।'
+        : 'Yes! Our Free Starter Plan includes a 1 month free trial with no credit card required. You can manage up to 5 products during trial.',
     },
     {
       q: isBn ? 'বারকোড স্টিকার কি যেকোনো প্রিন্টারে প্রিন্ট করা যাবে?' : 'Can I print barcode stickers on thermal sticker printers?',
@@ -87,7 +62,7 @@ export const LandingSupport: React.FC<LandingSupportProps> = ({ onOpenSignup, on
       q: isBn ? 'ইন্টারনেট সাময়িক না থাকলে কি বিক্রি বন্ধ হয়ে যাবে?' : 'How does cloud backup work?',
       a: isBn
         ? 'মোটেও না! লোকাল স্টোরেজ ক্যাশ থাকার কারণে বিক্রি স্বাভাবিক থাকবে এবং ইন্টারনেট এলে অটোম্যাটিক ক্লাউডে সিঙ্ক হয়ে যাবে।'
-        : 'Your data is securely stored in Google Firebase Cloud. Changes sync instantly across all logged-in devices.',
+        : 'Your data is securely stored in Supabase cloud storage. Changes sync across all logged-in devices.',
     },
     {
       q: isBn ? 'আমি কি পরে প্ল্যান পরিবর্তন করতে পারবো?' : 'Can I upgrade or change my plan anytime?',
@@ -183,8 +158,7 @@ export const LandingSupport: React.FC<LandingSupportProps> = ({ onOpenSignup, on
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '-20px' }}
                 transition={{ duration: 0.4, delay: i * 0.08 }}
-                whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                className="bg-slate-50 dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 space-y-2 hover:border-indigo-500/40 transition-colors cursor-pointer"
+                className="bg-slate-50 dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 space-y-2 transition-colors"
               >
                 <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400 flex items-center justify-center">
                   <Icon className="w-5 h-5" />
@@ -290,36 +264,28 @@ export const LandingSupport: React.FC<LandingSupportProps> = ({ onOpenSignup, on
                 </div>
               </div>
 
-              <div className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
-                <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
-                  <Phone className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase">Phone &amp; WhatsApp Hotline</p>
-                  <p className="text-xs font-bold text-slate-900 dark:text-white">+880 1700-000000</p>
-                  <p className="text-[10px] text-emerald-500 font-bold">Sat - Thu: 9:00 AM - 10:00 PM</p>
-                </div>
-              </div>
-
-              {/* Live Chat (Coming Soon) Badge */}
-              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-gradient-to-r from-purple-950/40 via-slate-950 to-slate-950 border border-purple-800/40 text-white">
+              {/* Email Us card — there is no in-app live chat, so contact is by email */}
+              <a
+                href="mailto:yearinvo@gmail.com"
+                className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 hover:border-indigo-500/50 transition-colors"
+              >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-300 flex items-center justify-center shrink-0">
-                    <MessageSquare className="w-5 h-5" />
+                  <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                    <Mail className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-white">In-App Live Chat Assistant</p>
-                    <p className="text-[10px] text-slate-400">Instant AI &amp; Human Operator Chat</p>
+                    <p className="text-xs font-bold text-slate-900 dark:text-white">Email Us</p>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400">Write to yearinvo@gmail.com — we reply by email.</p>
                   </div>
                 </div>
-                <span className="px-2.5 py-1 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider shrink-0 animate-pulse">
-                  COMING SOON
+                <span className="px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[10px] font-black uppercase tracking-wider shrink-0">
+                  Email
                 </span>
-              </div>
+              </a>
             </div>
           </motion.div>
 
-          {/* Right Interactive Contact Form */}
+          {/* Right — Email Support (no in-app contact form; messages go by email) */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -330,86 +296,23 @@ export const LandingSupport: React.FC<LandingSupportProps> = ({ onOpenSignup, on
             <h3 className="text-lg font-black text-slate-900 dark:text-white">
               {isBn ? 'মেসেজ পাঠান' : 'Send Us a Message'}
             </h3>
-
-            {submitted ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="p-6 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold text-center space-y-2"
-              >
-                <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto" />
-                <p>{isBn ? 'ধন্যবাদ! আপনার মেসেজটি আমরা পেয়েছি। খুব শীঘ্রই উত্তর দেওয়া হবে।' : 'Thank you! Your inquiry has been sent to our support desk.'}</p>
-              </motion.div>
-            ) : (
-              <form onSubmit={handleContactSubmit} className="space-y-3.5">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Your Full Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={formName}
-                    onChange={(e) => setFormName(e.target.value)}
-                    placeholder="e.g. Tanvir Ahmed"
-                    className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors"
-                    required
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                      Email Address *
-                    </label>
-                    <input
-                      type="email"
-                      value={formEmail}
-                      onChange={(e) => setFormEmail(e.target.value)}
-                      placeholder="you@example.com"
-                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                      Store Name
-                    </label>
-                    <input
-                      type="text"
-                      value={formStore}
-                      onChange={(e) => setFormStore(e.target.value)}
-                      placeholder="e.g. Apex Mart"
-                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    How can we help you? *
-                  </label>
-                  <textarea
-                    rows={4}
-                    value={formMsg}
-                    onChange={(e) => setFormMsg(e.target.value)}
-                    placeholder="Describe your question or store requirement..."
-                    className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors"
-                    required
-                  />
-                </div>
-
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  type="submit"
-                  className="w-full py-3 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-indigo-600/25"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>{isBn ? 'মেসেজ পাঠান' : 'Send Message'}</span>
-                </motion.button>
-              </form>
-            )}
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+              {isBn
+                ? 'আপনার প্রশ্ন বা সমস্যার কথা ইমেইলে লিখুন — আপনার মেইল অ্যাপটি খুলে যাবে।'
+                : 'Write to us by email — this opens your mail app with our support address filled in.'}
+            </p>
+            <a
+              href="mailto:yearinvo@gmail.com?subject=YearInvo%20Support%20Request"
+              className="w-full py-3 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-indigo-600/25"
+            >
+              <Mail className="w-3.5 h-3.5" />
+              <span>{isBn ? 'ইমেইল করুন — yearinvo@gmail.com' : 'Email Us — yearinvo@gmail.com'}</span>
+            </a>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              {isBn
+                ? 'আপনার দোকানের নাম ও সমস্যার বিবরণ ইমেইলে উল্লেখ করুন।'
+                : 'Please include your store name and a short description of your question in the email.'}
+            </p>
           </motion.div>
 
         </div>

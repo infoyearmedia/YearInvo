@@ -44,20 +44,26 @@ import {
 } from 'recharts';
 
 export const DashboardView: React.FC = () => {
-  const { metrics, settings, user, setActiveTab, t, products, language, formatNumber, formatCurrency, dashboardPreferences } = useApp();
-  const symbol = settings.currency || '৳';
+  const { metrics, settings, user, setActiveTab, t, products, sales, language, formatNumber, formatCurrency, dashboardPreferences } = useApp();
   const planName = user?.subscriptionPlan || 'Free';
 
-  // Dynamic Chart data based on actual sales or zeroed out
-  const salesChartData = [
-    { day: 'Mon', sales: 0, profit: 0 },
-    { day: 'Tue', sales: 0, profit: 0 },
-    { day: 'Wed', sales: 0, profit: 0 },
-    { day: 'Thu', sales: 0, profit: 0 },
-    { day: 'Fri', sales: 0, profit: 0 },
-    { day: 'Sat', sales: 0, profit: 0 },
-    { day: 'Sun', sales: metrics.todaySales, profit: metrics.todayProfit },
-  ];
+  // Real 7-day sales & gross profit, aggregated from actual sales records
+  // (profit = sale total minus buying cost of its items). Days with no sales
+  // show 0 because nothing was sold that day — never invented values.
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const salesChartData = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    const dayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const daySales = sales.filter((s) => s.date && s.date.startsWith(dayStr));
+    const dayTotal = daySales.reduce((sum, s) => sum + (Number(s.total) || 0), 0);
+    const dayCost = daySales.reduce(
+      (sum, s) => sum + s.items.reduce((itemSum, item) => itemSum + (Number(item.buyingPrice) || 0) * (Number(item.quantity) || 0), 0),
+      0
+    );
+    return { day: dayNames[d.getDay()], sales: dayTotal, profit: Math.max(0, dayTotal - dayCost) };
+  });
+  const hasChartData = salesChartData.some((d) => d.sales > 0);
 
   const calcBalance = metrics.todaySales - metrics.todayExpense;
 
@@ -368,7 +374,7 @@ export const DashboardView: React.FC = () => {
           {/* Small Text: Welcome Back, {User Name} */}
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400">
-              Welcome Back, <span className="font-bold text-slate-700 dark:text-slate-200">{user?.ownerName || 'Ariful Islam'}</span>
+              Welcome Back, <span className="font-bold text-slate-700 dark:text-slate-200">{user?.ownerName || storeName}</span>
             </span>
             <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
               ● Live
@@ -435,7 +441,7 @@ export const DashboardView: React.FC = () => {
                 Unlock POS &amp; Sell, Barcode Scanner &amp; QR Payments
               </h3>
               <p className="text-xs text-slate-300 mt-0.5">
-                Upgrade to Pro or Premium plan to run full supermarket POS &amp; Sell counters and print barcode stickers.
+                Upgrade to Premium to run full supermarket POS &amp; Sell counters and print barcode stickers.
               </p>
             </div>
           </div>
@@ -573,6 +579,7 @@ export const DashboardView: React.FC = () => {
             </div>
           </div>
 
+          {hasChartData ? (
           <div className="h-56 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={salesChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -604,6 +611,16 @@ export const DashboardView: React.FC = () => {
               </AreaChart>
             </ResponsiveContainer>
           </div>
+          ) : (
+          <div className="h-56 w-full flex flex-col items-center justify-center gap-2 text-center">
+            <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
+              {language === 'bn' ? 'এখনও যথেষ্ট বিক্রির তথ্য নেই' : 'Not enough data yet'}
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              {language === 'bn' ? 'গত ৭ দিনে কোনো বিক্রি রেকর্ড হয়নি। বিক্রি শুরু হলে এখানে ট্রেন্ড দেখা যাবে।' : 'No sales recorded in the last 7 days. The trend will appear here once sales are recorded.'}
+            </p>
+          </div>
+          )}
         </div>
 
         {/* Stock Alert Box */}
@@ -645,7 +662,7 @@ export const DashboardView: React.FC = () => {
           <div className="p-3.5 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/60">
             <p className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">Total Stock Valuation (Cost)</p>
             <p className="text-lg font-black text-slate-900 dark:text-white">
-              {symbol} {(metrics?.totalInventoryCostValue || 0).toLocaleString()}
+              {formatCurrency((metrics?.totalInventoryCostValue || 0))}
             </p>
           </div>
         </div>

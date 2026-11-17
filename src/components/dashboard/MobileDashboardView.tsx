@@ -59,14 +59,13 @@ export const MobileDashboardView: React.FC = () => {
     dashboardPreferences,
   } = useApp();
 
-  const symbol = settings.currency || '৳';
   const isBn = language === 'bn';
 
   // Analytics timeframe filter
   const [analyticsTimeframe, setAnalyticsTimeframe] = useState<'weekly' | 'monthly'>('weekly');
 
   // Activity Tab State
-  const [activeActivityTab, setActiveActivityTab] = useState<'sales' | 'customers' | 'expenses'>('sales');
+  const [activeActivityTab, setActiveActivityTab] = useState<'sales' | 'expenses'>('sales');
 
   // Collapsible section states
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
@@ -81,10 +80,6 @@ export const MobileDashboardView: React.FC = () => {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const formatAmount = (amt: number | undefined | null) => {
-    if (amt === undefined || amt === null || isNaN(Number(amt))) return '0';
-    return Number(amt).toLocaleString();
-  };
 
   const rawStore = settings.brandName || user?.brandName || '';
   const storeName = getCustomerStoreName(rawStore) || rawStore || 'YearInvo Store';
@@ -97,6 +92,7 @@ export const MobileDashboardView: React.FC = () => {
   const day = String(now.getDate()).padStart(2, '0');
   const localTodayStr = `${year}-${month}-${day}`;
   const isoTodayStr = now.toISOString().split('T')[0];
+  const currentMonthStr = `${year}-${month}`;
 
   const todaySales = sales.filter(
     (s) => s.date && (s.date.startsWith(localTodayStr) || s.date.startsWith(isoTodayStr))
@@ -114,25 +110,47 @@ export const MobileDashboardView: React.FC = () => {
   // Due customers count
   const dueCustomers = customers.filter((c) => (c.dueAmount || 0) > 0);
 
-  // 7-Day & Monthly Sales Chart Data
-  const weeklyData = [
-    { day: isBn ? 'সোম' : 'Mon', sales: Math.round(metrics.todaySales * 0.4), profit: Math.round(metrics.todayProfit * 0.4) },
-    { day: isBn ? 'মঙ্গল' : 'Tue', sales: Math.round(metrics.todaySales * 0.6), profit: Math.round(metrics.todayProfit * 0.5) },
-    { day: isBn ? 'বুধ' : 'Wed', sales: Math.round(metrics.todaySales * 0.5), profit: Math.round(metrics.todayProfit * 0.45) },
-    { day: isBn ? 'বৃহঃ' : 'Thu', sales: Math.round(metrics.todaySales * 0.8), profit: Math.round(metrics.todayProfit * 0.75) },
-    { day: isBn ? 'শুক্র' : 'Fri', sales: Math.round(metrics.todaySales * 0.9), profit: Math.round(metrics.todayProfit * 0.85) },
-    { day: isBn ? 'শনি' : 'Sat', sales: Math.round(metrics.todaySales * 0.7), profit: Math.round(metrics.todayProfit * 0.6) },
-    { day: isBn ? 'রবি' : 'Sun', sales: metrics.todaySales, profit: metrics.todayProfit },
-  ];
+  // 7-Day & Monthly Sales Chart Data — real aggregates from actual sales
+  // records only (gross profit = sale total minus buying cost of its items).
+  // Days/weeks with no sales show 0 because nothing was sold — never
+  // invented multipliers of today's sales.
+  const saleGrossProfit = (s: { items: { buyingPrice: number; quantity: number }[]; total: number }) =>
+    Math.max(
+      0,
+      (Number(s.total) || 0) -
+        s.items.reduce((sum, item) => sum + (Number(item.buyingPrice) || 0) * (Number(item.quantity) || 0), 0)
+    );
+  const dayNamesBn = ['রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহঃ', 'শুক্র', 'শনি'];
+  const dayNamesEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const weeklyData = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    const dayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const daySales = sales.filter((s) => s.date && s.date.startsWith(dayStr));
+    return {
+      day: isBn ? dayNamesBn[d.getDay()] : dayNamesEn[d.getDay()],
+      sales: daySales.reduce((sum, s) => sum + (Number(s.total) || 0), 0),
+      profit: daySales.reduce((sum, s) => sum + saleGrossProfit(s), 0),
+    };
+  });
 
-  const monthlyData = [
-    { day: isBn ? 'সপ্তাহ ১' : 'W1', sales: Math.round(metrics.monthlySales * 0.2), profit: Math.round(metrics.monthlySales * 0.05) },
-    { day: isBn ? 'সপ্তাহ ২' : 'W2', sales: Math.round(metrics.monthlySales * 0.28), profit: Math.round(metrics.monthlySales * 0.07) },
-    { day: isBn ? 'সপ্তাহ ৩' : 'W3', sales: Math.round(metrics.monthlySales * 0.22), profit: Math.round(metrics.monthlySales * 0.06) },
-    { day: isBn ? 'সপ্তাহ ৪' : 'W4', sales: Math.round(metrics.monthlySales * 0.3), profit: Math.round(metrics.monthlySales * 0.08) },
-  ];
+  const monthlyData = [0, 1, 2, 3].map((weekIdx) => {
+    const weekStart = weekIdx * 7 + 1;
+    const weekEnd = weekIdx === 3 ? 31 : weekStart + 6;
+    const weekSales = sales.filter((s) => {
+      if (!s.date || !s.date.startsWith(currentMonthStr)) return false;
+      const day = Number(s.date.slice(8, 10));
+      return day >= weekStart && day <= weekEnd;
+    });
+    return {
+      day: isBn ? `সপ্তাহ ${weekIdx + 1}` : `W${weekIdx + 1}`,
+      sales: weekSales.reduce((sum, s) => sum + (Number(s.total) || 0), 0),
+      profit: weekSales.reduce((sum, s) => sum + saleGrossProfit(s), 0),
+    };
+  });
 
   const chartData = analyticsTimeframe === 'weekly' ? weeklyData : monthlyData;
+  const hasChartData = chartData.some((d) => d.sales > 0);
 
   // 2x4 Quick Action Grid
   const rawQuickActions = [
@@ -412,7 +430,7 @@ export const MobileDashboardView: React.FC = () => {
                 {isBn ? 'প্ল্যান স্ট্যাটাস:' : 'Subscription Plan:'} <span className="text-purple-600 dark:text-purple-400 font-extrabold">{planName}</span>
               </p>
               <p className="text-[10px] text-slate-400">
-                {isBn ? 'আনলিমিটেড অ্যাকসেস ও ক্লাউড সিঙ্ক ফিচার সক্রিয়' : 'Full access to POS, Invoices & Analytics'}
+                {isBn ? 'সেলস, ইনভয়েস ও অ্যানালিটিক্স এক জায়গায়' : 'Manage sales, invoices & analytics from here'}
               </p>
             </div>
           </div>
@@ -530,6 +548,7 @@ export const MobileDashboardView: React.FC = () => {
 
         {/* Chart View */}
         <div className="p-2 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800/80">
+          {hasChartData ? (
           <div className="h-44 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
@@ -576,15 +595,25 @@ export const MobileDashboardView: React.FC = () => {
               </AreaChart>
             </ResponsiveContainer>
           </div>
+          ) : (
+          <div className="h-44 w-full flex flex-col items-center justify-center gap-1 text-center px-4">
+            <p className="text-xs font-bold text-slate-700 dark:text-slate-200">
+              {isBn ? 'এখনও যথেষ্ট বিক্রির তথ্য নেই' : 'Not enough data yet'}
+            </p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              {isBn ? 'এই সময়কালে কোনো বিক্রি রেকর্ড হয়নি। বিক্রি শুরু হলে এখানে ট্রেন্ড দেখা যাবে।' : 'No sales recorded in this period. The trend will appear here once sales are recorded.'}
+            </p>
+          </div>
+          )}
 
           <div className="flex items-center justify-around pt-2 border-t border-slate-200/80 dark:border-slate-800/80 text-[10px]">
             <div className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-300">
               <span className="w-2.5 h-2.5 rounded-full bg-[#ff5c01]" />
-              <span>{isBn ? 'মোট বিক্রয়:' : 'Total Sales:'} <span className="text-[#ff5c01]">{symbol}{formatAmount(metrics.monthlySales)}</span></span>
+              <span>{isBn ? 'মোট বিক্রয়:' : 'Total Sales:'} <span className="text-[#ff5c01]">{formatCurrency(metrics.monthlySales)}</span></span>
             </div>
             <div className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-300">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-              <span>{isBn ? 'মোট লাভ:' : 'Net Profit:'} <span className="text-emerald-500">{symbol}{formatAmount(metrics.monthlyProfit)}</span></span>
+              <span>{isBn ? 'মোট লাভ:' : 'Net Profit:'} <span className="text-emerald-500">{formatCurrency(metrics.monthlyProfit)}</span></span>
             </div>
           </div>
         </div>
@@ -664,7 +693,7 @@ export const MobileDashboardView: React.FC = () => {
                 {isBn ? 'কাস্টমার বাকী অ্যালার্ট' : 'Pending Dues Collect'}
               </p>
               <p className="text-[10px] text-orange-700 dark:text-orange-300 font-medium truncate">
-                {symbol}{formatAmount(metrics.totalDueCustomers)} ({dueCustomers.length} {isBn ? 'জন গ্রাহক' : 'due accounts'})
+                {formatCurrency(metrics.totalDueCustomers)} ({dueCustomers.length} {isBn ? 'জন গ্রাহক' : 'due accounts'})
               </p>
             </div>
           </div>
@@ -739,7 +768,7 @@ export const MobileDashboardView: React.FC = () => {
 
                 <div className="text-right">
                   <p className="text-xs font-black text-emerald-600 dark:text-emerald-400">
-                    {symbol} {formatAmount(sale.total)}
+                    {formatCurrency(sale.total)}
                   </p>
                   <p className="text-[9px] font-medium text-slate-400">
                     {sale.date ? sale.date.split('T')[0] : 'Today'}
@@ -784,7 +813,7 @@ export const MobileDashboardView: React.FC = () => {
 
                 <div className="text-right">
                   <p className="text-xs font-black text-rose-500">
-                    -{symbol} {formatAmount(exp.amount)}
+                    -{formatCurrency(exp.amount)}
                   </p>
                 </div>
               </div>

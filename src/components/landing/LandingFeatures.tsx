@@ -12,8 +12,12 @@ import {
 } from 'lucide-react';
 
 export const LandingFeatures: React.FC = () => {
-  const { language } = useApp();
+  const { language, convertMoney, displayCurrencySymbol } = useApp();
   const isBn = language === 'bn';
+  // Demo amounts are BDT base values, converted to the visitor's display
+  // currency like LandingShowcase does (never a hardcoded ৳ amount).
+  const money = (bdtAmount: number) =>
+    `${displayCurrencySymbol}${convertMoney(bdtAmount, 'BDT').toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 
   const featuresList = [
     {
@@ -156,11 +160,11 @@ export const LandingFeatures: React.FC = () => {
                 {/* Mini-UI panel */}
                 {feat.id === 'quicksale' && (
                   <div className="rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200/80 dark:border-slate-800 p-3.5 space-y-2">
-                    <div className="flex justify-between text-xs"><span className="text-slate-500">{isBn ? 'পোলো শার্ট × ১' : 'Polo Shirt × 1'}</span><span className="font-bold text-slate-900 dark:text-white">৳850</span></div>
-                    <div className="flex justify-between text-xs"><span className="text-slate-500">{isBn ? 'ইয়ারবাডস × ১' : 'Earbuds × 1'}</span><span className="font-bold text-slate-900 dark:text-white">৳1,650</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-slate-500">{isBn ? 'পোলো শার্ট × ১' : 'Polo Shirt × 1'}</span><span className="font-bold text-slate-900 dark:text-white">{money(850)}</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-slate-500">{isBn ? 'ইয়ারবাডস × ১' : 'Earbuds × 1'}</span><span className="font-bold text-slate-900 dark:text-white">{money(1650)}</span></div>
                     <div className="flex justify-between text-xs pt-2 border-t border-dashed border-slate-300 dark:border-slate-700">
                       <span className="font-bold text-slate-700 dark:text-slate-200">{isBn ? 'মোট' : 'Total'}</span>
-                      <span className="font-extrabold text-indigo-600 dark:text-indigo-400">৳2,500</span>
+                      <span className="font-extrabold text-indigo-600 dark:text-indigo-400">{money(2500)}</span>
                     </div>
                   </div>
                 )}
@@ -192,7 +196,7 @@ export const LandingFeatures: React.FC = () => {
                 {feat.id === 'customers' && (
                   <div className="flex justify-between items-center rounded-xl bg-teal-50 dark:bg-teal-950/40 px-3 py-2 text-xs">
                     <span className="font-bold text-teal-700 dark:text-teal-300">{isBn ? 'বকেয়া খাতা' : 'Due Khata'}</span>
-                    <span className="font-extrabold text-slate-900 dark:text-white">৳12,400</span>
+                    <span className="font-extrabold text-slate-900 dark:text-white">{money(12400)}</span>
                   </div>
                 )}
                 {feat.id === 'product' && (

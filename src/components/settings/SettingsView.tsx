@@ -576,7 +576,7 @@ export const SettingsView: React.FC = () => {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="font-bold text-xs text-slate-800 dark:text-slate-200">Export Complete Store Backup</p>
-              <p className="text-[11px] text-slate-500">Download encrypted JSON file of all sales, inventory, and customers.</p>
+              <p className="text-[11px] text-slate-500">Download backup (JSON) of the data stored on this device — local data only, not encrypted.</p>
             </div>
 
             <button

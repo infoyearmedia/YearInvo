@@ -212,7 +212,12 @@ export const openPaddleCheckout = async (options: OpenCheckoutOptions): Promise<
   }
 
   if (!isPriceIdValid) {
-    const err = new Error(`Invalid Price ID "${priceId}". Price IDs must start with "pri_".`);
+    // Fail fast with an honest message instead of letting Paddle.js fail
+    // obscurely: checkout cannot work until a real pri_ price ID is
+    // configured for this plan (see src/config/paddle.ts).
+    const err = new Error(
+      'Card checkout is not available yet — no Paddle price ID is configured for this plan. Please pay manually (bKash / Nagad / Rocket / bank) and submit your transaction ID for approval.'
+    );
     console.warn('[PADDLE DEBUG] checkout notice:', err.message);
     if (activeOnErrorCallback) activeOnErrorCallback(err);
     return;
@@ -228,8 +233,8 @@ export const openPaddleCheckout = async (options: OpenCheckoutOptions): Promise<
   if (PADDLE_CONFIG.checkoutEnabled === false) {
     const notice =
       PADDLE_CONFIG.checkoutStatusReason ||
-      "Checkouts are not enabled for this Paddle account yet because account onboarding/compliance verification is pending in your Paddle Dashboard. You can submit your payment transaction reference or invoice below for immediate manual approval.";
-    console.warn('[PADDLE DEBUG] Automated checkout opening bypassed because checkouts are pending account verification:', notice);
+      "Card checkout is not available yet — no Paddle price IDs are configured. You can submit your payment transaction reference or invoice below for manual approval.";
+    console.warn('[PADDLE DEBUG] Automated checkout opening bypassed because no Paddle price IDs are configured:', notice);
     if (activeOnErrorCallback) {
       activeOnErrorCallback(new Error(notice));
     }

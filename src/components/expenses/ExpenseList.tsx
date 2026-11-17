@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Expense } from '../../types';
-import { Receipt, Plus, Search, Calendar, FileText, ArrowDown, CreditCard, Banknote } from 'lucide-react';
+import { ConfirmModal } from '../common/ConfirmModal';
+import { Receipt, Plus, Search, Calendar, FileText, ArrowDown, CreditCard, Banknote, Pencil, Trash2 } from 'lucide-react';
 
 export const ExpenseList: React.FC = () => {
-  const { expenses, addExpense, metrics, settings, t } = useApp();
-  const symbol = settings.currency || '৳';
+  const { expenses, addExpense, updateExpense, deleteExpense, metrics, settings, t, formatCurrency, displayCurrencySymbol } = useApp();
+  const symbol = displayCurrencySymbol;
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
 
@@ -43,7 +46,11 @@ export const ExpenseList: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title || formData.amount <= 0) return;
-    addExpense(formData);
+    if (editingExpense) {
+      updateExpense(editingExpense.id, formData);
+    } else {
+      addExpense(formData);
+    }
     setFormData({
       title: '',
       category: 'Rent',
@@ -52,7 +59,34 @@ export const ExpenseList: React.FC = () => {
       note: '',
       paymentMethod: 'Cash',
     });
+    setEditingExpense(null);
     setIsModalOpen(false);
+  };
+
+  const openAddModal = () => {
+    setEditingExpense(null);
+    setFormData({
+      title: '',
+      category: 'Rent',
+      amount: 1000,
+      date: new Date().toISOString().split('T')[0],
+      note: '',
+      paymentMethod: 'Cash',
+    });
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (exp: Expense) => {
+    setEditingExpense(exp);
+    setFormData({
+      title: exp.title,
+      category: exp.category,
+      amount: exp.amount,
+      date: exp.date,
+      note: exp.note || '',
+      paymentMethod: exp.paymentMethod,
+    });
+    setIsModalOpen(true);
   };
 
   return (
@@ -70,7 +104,7 @@ export const ExpenseList: React.FC = () => {
         </div>
 
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={openAddModal}
           className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-md shadow-rose-600/30 transition-all"
         >
           <Plus className="w-4 h-4" />
@@ -83,13 +117,13 @@ export const ExpenseList: React.FC = () => {
         <div>
           <span className="text-xs font-semibold text-slate-500 uppercase">{t('todayExpense')}</span>
           <h3 className="text-2xl font-black text-rose-600 dark:text-rose-400 mt-1">
-            {symbol} {metrics.todayExpense.toLocaleString()}
+            {formatCurrency(metrics.todayExpense)}
           </h3>
         </div>
         <div className="text-right">
           <span className="text-xs font-semibold text-slate-500 uppercase">Filtered Total</span>
           <p className="text-lg font-bold text-slate-800 dark:text-slate-100 mt-1">
-            {symbol} {totalExpenseFiltered.toLocaleString()}
+            {formatCurrency(totalExpenseFiltered)}
           </p>
         </div>
       </div>
@@ -129,6 +163,7 @@ export const ExpenseList: React.FC = () => {
               <th className="p-4">Category</th>
               <th className="p-4">Payment Method</th>
               <th className="p-4 text-right">Amount</th>
+              <th className="p-4 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium text-slate-700 dark:text-slate-300">
@@ -146,7 +181,27 @@ export const ExpenseList: React.FC = () => {
                 </td>
                 <td className="p-4 text-slate-600 dark:text-slate-400">{exp.paymentMethod}</td>
                 <td className="p-4 text-right font-black text-rose-600 dark:text-rose-400">
-                  − {symbol} {exp.amount.toLocaleString()}
+                  − {formatCurrency(exp.amount)}
+                </td>
+                <td className="p-4 text-right">
+                  <div className="flex items-center justify-end gap-1">
+                    <button
+                      type="button"
+                      onClick={() => openEditModal(exp)}
+                      title="Edit expense"
+                      className="text-slate-400 hover:text-indigo-600 transition-colors p-1.5 cursor-pointer"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setExpenseToDelete(exp)}
+                      title="Delete expense"
+                      className="text-slate-400 hover:text-rose-500 transition-colors p-1.5 cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -158,7 +213,7 @@ export const ExpenseList: React.FC = () => {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4">
           <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 space-y-4">
-            <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100">Record New Business Expense</h3>
+            <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100">{editingExpense ? 'Edit Expense' : 'Record New Business Expense'}</h3>
             <form onSubmit={handleSubmit} className="space-y-3">
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Expense Title *</label>
@@ -238,7 +293,7 @@ export const ExpenseList: React.FC = () => {
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={() => { setIsModalOpen(false); setEditingExpense(null); }}
                   className="px-3 py-1.5 text-xs font-semibold text-slate-500"
                 >
                   {t('cancel')}
@@ -254,6 +309,22 @@ export const ExpenseList: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Delete Expense Confirmation Modal */}
+      <ConfirmModal
+        isOpen={Boolean(expenseToDelete)}
+        title="Delete Expense"
+        message={`Are you sure you want to delete expense "${expenseToDelete?.title}"? This action cannot be undone.`}
+        confirmText="Delete Expense"
+        cancelText="Cancel"
+        onConfirm={() => {
+          if (expenseToDelete) {
+            deleteExpense(expenseToDelete.id);
+            setExpenseToDelete(null);
+          }
+        }}
+        onCancel={() => setExpenseToDelete(null)}
+      />
     </div>
   );
 };

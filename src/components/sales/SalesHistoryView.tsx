@@ -5,8 +5,7 @@ import { ReceiptModal } from '../pos/ReceiptModal';
 import { ShoppingBag, Search, Eye, Calendar, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
 
 export const SalesHistoryView: React.FC = () => {
-  const { sales, settings, t, language } = useApp();
-  const symbol = settings.currency || '৳';
+  const { sales, settings, t, language, formatCurrency } = useApp();
   const isBn = language === 'bn';
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -35,12 +34,19 @@ export const SalesHistoryView: React.FC = () => {
 
   const totalPeriodProfit = rangeFilteredSales.reduce((acc, sale) => {
     const saleProfit = sale.items.reduce((itemAcc, item) => {
+      // Real buying price whenever present; only items missing a buying
+      // price fall back to an assumed 30% margin (cost = 70% of selling
+      // price) — that part of the total is an estimate, labelled below.
       const buyingPrice = item.buyingPrice || (item.sellingPrice * 0.7);
       const itemCost = buyingPrice * item.quantity;
       return itemAcc + (item.total - itemCost);
     }, 0);
     return acc + saleProfit;
   }, 0);
+
+  const hasEstimatedProfit = rangeFilteredSales.some((sale) =>
+    sale.items.some((item) => !item.buyingPrice)
+  );
 
   return (
     <div className="space-y-6">
@@ -110,7 +116,7 @@ export const SalesHistoryView: React.FC = () => {
                 : (isBn ? 'গত ৩ মাসের মোট বিক্রি' : 'Selected 3 Months Sales Revenue')}
             </span>
             <h3 className="text-2xl font-black text-slate-900 dark:text-white mt-1">
-              {symbol} {(totalPeriodSales || 0).toLocaleString()}
+              {formatCurrency((totalPeriodSales || 0))}
             </h3>
             <p className="text-[10px] text-slate-400 mt-0.5">
               {rangeFilteredSales.length} {isBn ? 'টি ট্রানজ্যাকশন সম্পন্ন' : 'transactions recorded'}
@@ -130,10 +136,14 @@ export const SalesHistoryView: React.FC = () => {
                 : (isBn ? 'গত ৩ মাসের নিট লাভ/ক্ষতি' : 'Selected 3 Months Profit / Loss')}
             </span>
             <h3 className={`text-2xl font-black mt-1 ${totalPeriodProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-              {symbol} {Math.abs(totalPeriodProfit || 0).toLocaleString()} {totalPeriodProfit < 0 ? '(Loss)' : ''}
+              {formatCurrency(Math.abs(totalPeriodProfit || 0))} {totalPeriodProfit < 0 ? '(Loss)' : ''}
             </h3>
             <p className="text-[10px] text-slate-400 mt-0.5">
-              {isBn ? 'কেনা দাম ও বিক্রি দামের সমন্বিত হিসাব' : 'Calculated based on item buying vs selling prices'}
+              {hasEstimatedProfit
+                ? (isBn
+                  ? 'আনুমানিক লাভ (৩০% মার্জিন ধরা হয়েছে — কিছু আইটেমের কেনা দাম নেই)'
+                  : 'Estimated profit (30% margin assumed — buying price missing for some items)')
+                : (isBn ? 'কেনা দাম ও বিক্রি দামের সমন্বিত হিসাব' : 'Calculated based on item buying vs selling prices')}
             </p>
           </div>
           <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold shrink-0 ${
@@ -182,7 +192,7 @@ export const SalesHistoryView: React.FC = () => {
                   </td>
                   <td className="p-4 text-right font-bold">{sale.items.length} items</td>
                   <td className="p-4 text-right font-black text-emerald-600 dark:text-emerald-400">
-                    {symbol} {(sale.total || 0).toLocaleString()}
+                    {formatCurrency((sale.total || 0))}
                   </td>
                   <td className="p-4 text-center">
                     <button

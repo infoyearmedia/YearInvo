@@ -5,14 +5,7 @@ import {
   DollarSign,
   CheckCircle2,
   Clock,
-  Truck,
   Search,
-  Filter,
-  ArrowRight,
-  ShieldCheck,
-  Calendar,
-  User,
-  Phone,
   Check,
   X,
 } from 'lucide-react';
@@ -24,7 +17,6 @@ export const CodManagementView: React.FC = () => {
     formatCurrency,
     formatDate,
     settings,
-    t,
   } = useApp();
 
   const [filterState, setFilterState] = useState<'All' | 'Pending' | 'Collected'>('Pending');

@@ -57,11 +57,10 @@ export const BarcodeGeneratorView: React.FC = () => {
     language,
     generatedProductCodes,
     isCodeGenerated,
-    getGeneratedQRCount,
     recordGeneratedQRCodes,
+    formatCurrency,
   } = useApp();
 
-  const symbol = settings.currency || '৳';
   const brandName = getDisplayBrandName(settings.brandName) || user?.brandName || 'Store';
 
   const [selectedProductId, setSelectedProductId] = useState<string>(products[0]?.id || '');
@@ -86,10 +85,6 @@ export const BarcodeGeneratorView: React.FC = () => {
 
   const totalProductsCount = products.length;
   const usedCodesCount = generatedProductCodes.length;
-  const currentStock = selectedProduct
-    ? selectedProduct.currentStock ?? (selectedProduct as any).stock ?? 0
-    : 0;
-  const alreadyGenerated = selectedProduct ? getGeneratedQRCount(selectedProduct.id) : 0;
 
   const filteredProducts = useMemo(
     () =>
@@ -208,7 +203,16 @@ export const BarcodeGeneratorView: React.FC = () => {
     setIsGenerating(true);
     try {
       const numCopies = Math.max(1, Number(copiesInput) || 1);
-      recordGeneratedQRCodes(selectedProduct.id, numCopies);
+      const recordResult = recordGeneratedQRCodes(selectedProduct.id, numCopies);
+      if (!recordResult.success) {
+        setCopiedNotification(
+          language === 'bn'
+            ? `কোড রেকর্ড করা যায়নি: ${recordResult.message || 'আবার চেষ্টা করুন।'}`
+            : `Could not record generated codes: ${recordResult.message || 'Please try again.'}`
+        );
+        setTimeout(() => setCopiedNotification(null), 4000);
+        return;
+      }
       const config = await generateLabelData();
       if (config) {
         setGeneratedConfig(config);
@@ -280,7 +284,7 @@ export const BarcodeGeneratorView: React.FC = () => {
 
         <div class="footer-row">
           ${config.showSKU ? `<span class="sku-text">#${config.sku}</span>` : '<span></span>'}
-          ${config.showPrice ? `<span class="price-text">${symbol}${config.sellingPrice}</span>` : ''}
+          ${config.showPrice ? `<span class="price-text">${formatCurrency(config.sellingPrice)}</span>` : ''}
         </div>
       </div>
     `
@@ -622,7 +626,7 @@ export const BarcodeGeneratorView: React.FC = () => {
                 pdf.setFontSize(9);
                 pdf.setTextColor(230, 80, 0);
                 pdf.text(
-                  `${symbol}${config.sellingPrice}`,
+                  `${formatCurrency(config.sellingPrice)}`,
                   x + cellWidth - 3,
                   cursorY,
                   { align: 'right' }
@@ -720,7 +724,7 @@ export const BarcodeGeneratorView: React.FC = () => {
           if (config.showPrice) {
             pdf.setFont('helvetica', 'bold');
             pdf.setFontSize(heightMm <= 20 ? 7.5 : 9);
-            pdf.text(`${symbol}${config.sellingPrice}`, widthMm - 2, footerY, {
+            pdf.text(`${formatCurrency(config.sellingPrice)}`, widthMm - 2, footerY, {
               align: 'right',
             });
           }
@@ -999,8 +1003,7 @@ export const BarcodeGeneratorView: React.FC = () => {
                 const hasCode = isCodeGenerated(p.id);
                 return (
                   <option key={p.id} value={p.id}>
-                    {p.name} — SKU: {p.sku || p.id.slice(0, 6)} ({symbol}
-                    {p.sellingPrice}) {hasCode ? '✓ [Generated]' : ''}
+                    {p.name} — SKU: {p.sku || p.id.slice(0, 6)} ({formatCurrency(p.sellingPrice)}) {hasCode ? '✓ [Generated]' : ''}
                   </option>
                 );
               })}
@@ -1023,7 +1026,7 @@ export const BarcodeGeneratorView: React.FC = () => {
                 <div className="flex justify-between items-center">
                   <span className="text-slate-500">{language === 'bn' ? 'মূল্য:' : 'Price:'}</span>
                   <strong className="text-[#ff5c01] font-black">
-                    {symbol}{selectedProduct.sellingPrice}
+                    {formatCurrency(selectedProduct.sellingPrice)}
                   </strong>
                 </div>
                 <div className="flex justify-between items-center pt-1 border-t border-slate-200/50 dark:border-slate-700/50 text-[11px]">
@@ -1403,7 +1406,7 @@ export const BarcodeGeneratorView: React.FC = () => {
                         marginLeft: 'auto',
                       }}
                     >
-                      {symbol}{generatedConfig.sellingPrice}
+                      {formatCurrency(generatedConfig.sellingPrice)}
                     </span>
                   )}
                 </div>
@@ -1524,7 +1527,7 @@ export const BarcodeGeneratorView: React.FC = () => {
 
                     {generatedConfig.showPrice && (
                       <span className="font-black text-xs text-[#ff5c01] ml-auto">
-                        {symbol}{generatedConfig.sellingPrice}
+                        {formatCurrency(generatedConfig.sellingPrice)}
                       </span>
                     )}
                   </div>
@@ -1609,7 +1612,7 @@ export const BarcodeGeneratorView: React.FC = () => {
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">
                   {language === 'bn' ? 'প্রিন্টার ও পেপার সাইজ নির্বাচন করুন:' : 'Select Printer Paper Size:'}
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                   <button
                     type="button"
                     onClick={() => setActivePrintLayout('a4')}
@@ -1685,6 +1688,24 @@ export const BarcodeGeneratorView: React.FC = () => {
                       Jewelry / Mini Roll
                     </span>
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setActivePrintLayout('thermal-15x30')}
+                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
+                      activePrintLayout === 'thermal-15x30'
+                        ? 'bg-teal-50 dark:bg-teal-950/40 border-teal-500 text-teal-900 dark:text-teal-200 shadow-sm'
+                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <Tag className="w-4 h-4 text-teal-600" />
+                      {activePrintLayout === 'thermal-15x30' && <Check className="w-4 h-4 text-teal-600" />}
+                    </div>
+                    <strong className="text-xs font-black block">Thermal (15×30 mm)</strong>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 block mt-0.5">
+                      Narrow Roll / Small Labels
+                    </span>
+                  </button>
                 </div>
               </div>
 
@@ -1749,7 +1770,7 @@ export const BarcodeGeneratorView: React.FC = () => {
                     )}
                     {showPrice && (
                       <span className="font-black text-xs text-[#ff5c01] ml-auto">
-                        {symbol}{selectedProduct?.sellingPrice}
+                        {formatCurrency(selectedProduct?.sellingPrice)}
                       </span>
                     )}
                   </div>

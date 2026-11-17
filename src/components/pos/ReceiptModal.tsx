@@ -8,7 +8,6 @@ import {
   Printer,
   CheckCircle2,
   Share2,
-  Download,
   Phone,
 } from 'lucide-react';
 
@@ -19,8 +18,7 @@ interface ReceiptModalProps {
 }
 
 export const ReceiptModal: React.FC<ReceiptModalProps> = ({ sale, isOpen, onClose }) => {
-  const { settings, user } = useApp();
-  const symbol = settings.currency || '৳';
+  const { settings, user, formatCurrency } = useApp();
   const [isShareOpen, setIsShareOpen] = useState(false);
 
   if (!isOpen || !sale) return null;
@@ -147,10 +145,10 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ sale, isOpen, onClos
                         </td>
                         <td className="p-3 text-center font-extrabold">{item.quantity}</td>
                         <td className="p-3 text-right text-slate-600 dark:text-slate-400">
-                          {symbol}{(item.sellingPrice || 0).toLocaleString()}
+                          {formatCurrency((item.sellingPrice || 0))}
                         </td>
                         <td className="p-3 text-right font-black text-slate-900 dark:text-white">
-                          {symbol}{(item.total || 0).toLocaleString()}
+                          {formatCurrency((item.total || 0))}
                         </td>
                       </tr>
                     ))}
@@ -163,32 +161,32 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ sale, isOpen, onClos
             <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 space-y-2 text-xs">
               <div className="flex justify-between text-slate-600 dark:text-slate-400">
                 <span>Subtotal</span>
-                <span className="font-bold text-slate-800 dark:text-slate-200">{symbol} {(sale.subtotal || 0).toLocaleString()}</span>
+                <span className="font-bold text-slate-800 dark:text-slate-200">{formatCurrency((sale.subtotal || 0))}</span>
               </div>
 
               {(sale.discount || 0) > 0 && (
                 <div className="flex justify-between text-rose-600 dark:text-rose-400 font-semibold">
                   <span>Discount</span>
-                  <span>-{symbol} {(sale.discount || 0).toLocaleString()}</span>
+                  <span>-{formatCurrency((sale.discount || 0))}</span>
                 </div>
               )}
 
               {(sale.tax || 0) > 0 && (
                 <div className="flex justify-between text-slate-600 dark:text-slate-400 font-semibold">
                   <span>Tax</span>
-                  <span>+{symbol} {(sale.tax || 0).toLocaleString()}</span>
+                  <span>+{formatCurrency((sale.tax || 0))}</span>
                 </div>
               )}
 
               <div className="pt-2 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center text-base sm:text-lg font-black text-slate-900 dark:text-white">
                 <span>Grand Total</span>
-                <span className="text-[#ff5c01]">{symbol} {(sale.total || 0).toLocaleString()}</span>
+                <span className="text-[#ff5c01]">{formatCurrency((sale.total || 0))}</span>
               </div>
 
               <div className="pt-2 border-t border-slate-200 dark:border-slate-700 grid grid-cols-2 gap-2 text-xs pt-2">
                 <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-extrabold flex justify-between items-center">
                   <span>Paid Amount</span>
-                  <span>{symbol} {(sale.paidAmount || 0).toLocaleString()}</span>
+                  <span>{formatCurrency((sale.paidAmount || 0))}</span>
                 </div>
 
                 <div className={`p-2 rounded-xl border font-extrabold flex justify-between items-center ${
@@ -197,7 +195,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ sale, isOpen, onClos
                     : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
                 }`}>
                   <span>Due Amount</span>
-                  <span>{symbol} {(sale.dueAmount || 0).toLocaleString()}</span>
+                  <span>{formatCurrency((sale.dueAmount || 0))}</span>
                 </div>
               </div>
 
@@ -215,21 +213,13 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ sale, isOpen, onClos
           </div>
 
           {/* Action Buttons Footer */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 px-5 sm:px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 print:hidden">
+          <div className="grid grid-cols-3 gap-2 px-5 sm:px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 print:hidden">
             <button
               onClick={handlePrint}
               className="px-4 py-2.5 bg-[#ff5c01] hover:bg-[#e05100] text-white font-extrabold text-xs rounded-xl shadow-md shadow-[#ff5c01]/25 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <Printer className="w-4 h-4" />
               <span>Print</span>
-            </button>
-
-            <button
-              onClick={handlePrint}
-              className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-            >
-              <Download className="w-4 h-4" />
-              <span>PDF</span>
             </button>
 
             <button

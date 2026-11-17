@@ -45,7 +45,7 @@ export const LandingAbout: React.FC<LandingAboutProps> = ({ onOpenSignup }) => {
     {
       icon: ShieldCheck,
       title: isBn ? 'নিরাপদ ক্লাউড ব্যাকআপ' : 'Secure cloud backup',
-      desc: isBn ? 'ফায়ারবেস এনক্রিপশনে আপনার হিসাব নিরাপদে সংরক্ষিত।' : 'Your accounts stay safe with Firebase-encrypted cloud storage.',
+      desc: isBn ? 'সুপাবেস এনক্রিপশনে আপনার হিসাব নিরাপদে সংরক্ষিত।' : 'Your accounts stay safe with Supabase-encrypted cloud storage.',
     },
     {
       icon: Headphones,

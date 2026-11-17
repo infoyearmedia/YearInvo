@@ -22,10 +22,10 @@ export type PremiumFeatureKey =
   | 'isTeamManagementAllowed'
   | 'isPayrollAllowed'
   | 'isSmartReorderAllowed'
-  | 'isAiInsightsAllowed'
   | 'isCustomerLoyaltyAllowed'
   | 'isAuditLogAllowed'
-  | 'isAdvancedPermissionsAllowed';
+  | 'isAdvancedPermissionsAllowed'
+  | 'isMultiBranchAllowed';
 
 interface PremiumFeatureGuardProps {
   featureKey: PremiumFeatureKey;
@@ -81,13 +81,6 @@ export const ALL_PREMIUM_FEATURES = [
     descBn: 'স্টক ঘাটতি প্রেডিকশন এবং স্বয়ংক্রিয় রি-অর্ডার অ্যালার্ট।',
   },
   {
-    key: 'isAiInsightsAllowed',
-    nameEn: 'AI Business Assistant',
-    nameBn: 'এআই বিজনেস অ্যাসিস্ট্যান্ট',
-    descEn: 'AI-driven business analytics, sales forecasts, and financial health intelligence.',
-    descBn: 'কৃত্রিম বুদ্ধিমত্তার মাধ্যমে বিক্রয় বিশ্লেষণ ও পূর্বাভাস রিপোর্ট।',
-  },
-  {
     key: 'isCustomerLoyaltyAllowed',
     nameEn: 'Customer Loyalty & Points',
     nameBn: 'কাস্টমার লয়ালটি ও পয়েন্ট প্রোগ্রাম',
@@ -107,6 +100,13 @@ export const ALL_PREMIUM_FEATURES = [
     nameBn: 'অ্যাডভান্সড টিম পারমিশন',
     descEn: 'Granular access control across POS, inventory, reports, and financial tabs.',
     descBn: 'কাস্টম রোল তৈরি করে নির্দিষ্ট মেনু বা অ্যাকশন লক/আনলক নিয়ন্ত্রণ।',
+  },
+  {
+    key: 'isMultiBranchAllowed',
+    nameEn: 'Multi-Branch Stores',
+    nameBn: 'মাল্টি-ব্রাঞ্চ স্টোর',
+    descEn: 'Run unlimited store branches from one account, each with its own stock, staff, and reports.',
+    descBn: 'একটি অ্যাকাউন্ট থেকে আনলিমিটেড শাখা পরিচালনা করুন — প্রতিটি শাখার আলাদা স্টক, স্টাফ ও রিপোর্ট।',
   },
 ];
 
@@ -291,7 +291,7 @@ export const PremiumFeatureGuard: React.FC<PremiumFeatureGuardProps> = ({
         </div>
       )}
 
-      {/* 10 Premium Features Overview Box */}
+      {/* 10 Premium Features Overview Box (AI Insights removed — it is a "Coming soon" page, not a Premium feature; Multi-Branch added) */}
       <div className="rounded-2xl bg-slate-900/90 border border-slate-800 p-6 sm:p-8 shadow-xl">
         <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-6">
           <div>

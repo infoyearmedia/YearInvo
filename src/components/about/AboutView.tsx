@@ -9,7 +9,6 @@ import {
   Code2,
   Globe,
   Mail,
-  Phone,
   MapPin,
   CheckCircle2,
   ExternalLink,
@@ -140,7 +139,7 @@ export const AboutView: React.FC = () => {
           <div className="space-y-3 text-xs text-slate-600 dark:text-slate-300">
             <div>
               <span className="text-slate-400 font-semibold block text-[11px] uppercase tracking-wider">Legal Entity</span>
-              <span className="font-bold text-slate-900 dark:text-slate-100 text-sm">StockMaster Technologies Ltd.</span>
+              <span className="font-bold text-slate-900 dark:text-slate-100 text-sm">YearInvo (Year Media)</span>
             </div>
             <div>
               <span className="text-slate-400 font-semibold block text-[11px] uppercase tracking-wider">Mission</span>
@@ -173,12 +172,12 @@ export const AboutView: React.FC = () => {
           <div className="space-y-3 text-xs text-slate-600 dark:text-slate-300">
             <div>
               <span className="text-slate-400 font-semibold block text-[11px] uppercase tracking-wider">Lead Developer &amp; Team</span>
-              <span className="font-bold text-slate-900 dark:text-slate-100 text-sm">StockMaster Core Engineering</span>
+              <span className="font-bold text-slate-900 dark:text-slate-100 text-sm">YearInvo Engineering</span>
             </div>
             <div>
               <span className="text-slate-400 font-semibold block text-[11px] uppercase tracking-wider">Technology Stack</span>
               <p className="font-mono text-[11px] bg-slate-50 dark:bg-slate-800 p-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 mt-1">
-                React 18 + Vite • TypeScript • Tailwind CSS • Google GenAI • Cloud Storage
+                React 19 + Vite • TypeScript • Tailwind CSS • Google GenAI • Cloud Storage
               </p>
             </div>
             <div>
@@ -198,9 +197,9 @@ export const AboutView: React.FC = () => {
           Contact &amp; Web Resources
         </h3>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <a
-            href="https://stockmaster.app"
+            href="https://yearinvo.vercel.app"
             target="_blank"
             rel="noopener noreferrer"
             className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 hover:border-[#ff5c01] transition-all group flex flex-col justify-between"
@@ -211,12 +210,12 @@ export const AboutView: React.FC = () => {
             </div>
             <div>
               <p className="text-[10px] text-slate-400 uppercase font-bold">Official Website</p>
-              <p className="font-extrabold text-xs text-slate-900 dark:text-slate-100 mt-0.5">https://stockmaster.app</p>
+              <p className="font-extrabold text-xs text-slate-900 dark:text-slate-100 mt-0.5">https://yearinvo.vercel.app</p>
             </div>
           </a>
 
           <a
-            href="mailto:support@stockmaster.app"
+            href="mailto:yearinvo@gmail.com"
             className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 hover:border-[#ff5c01] transition-all group flex flex-col justify-between"
           >
             <div className="flex items-center justify-between mb-2">
@@ -225,21 +224,7 @@ export const AboutView: React.FC = () => {
             </div>
             <div>
               <p className="text-[10px] text-slate-400 uppercase font-bold">Support Email</p>
-              <p className="font-extrabold text-xs text-slate-900 dark:text-slate-100 mt-0.5">support@stockmaster.app</p>
-            </div>
-          </a>
-
-          <a
-            href="tel:+8801700000000"
-            className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 hover:border-[#ff5c01] transition-all group flex flex-col justify-between"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <Phone className="w-5 h-5 text-emerald-500" />
-              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-500" />
-            </div>
-            <div>
-              <p className="text-[10px] text-slate-400 uppercase font-bold">Direct Hotline</p>
-              <p className="font-extrabold text-xs text-slate-900 dark:text-slate-100 mt-0.5">+880 1700-000000</p>
+              <p className="font-extrabold text-xs text-slate-900 dark:text-slate-100 mt-0.5">yearinvo@gmail.com</p>
             </div>
           </a>
         </div>
@@ -249,7 +234,7 @@ export const AboutView: React.FC = () => {
       <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
         <div className="space-y-1 text-center sm:text-left">
           <p className="font-bold text-slate-800 dark:text-slate-200">
-            © 2026 {brandName} (StockMaster Technologies Ltd). All rights reserved.
+            © 2026 {brandName} (YearInvo). All rights reserved.
           </p>
           <p className="text-slate-500 text-[11px] flex items-center justify-center sm:justify-start gap-1">
             Built with <Heart className="w-3 h-3 text-rose-500 fill-rose-500" /> for store owners &amp; merchants worldwide.
@@ -318,7 +303,7 @@ export const AboutView: React.FC = () => {
 
               <h4 className="font-bold text-slate-900 dark:text-slate-100 pt-2">4. Contact Us</h4>
               <p>
-                If you have questions regarding this Privacy Policy or wish to request data export, please contact support@stockmaster.app.
+                If you have questions regarding this Privacy Policy or wish to request data export, please contact yearinvo@gmail.com.
               </p>
             </div>
 
@@ -376,7 +361,7 @@ export const AboutView: React.FC = () => {
 
               <h4 className="font-bold text-slate-900 dark:text-slate-100 pt-2">4. Limitation of Liability</h4>
               <p>
-                StockMaster Technologies Ltd. shall not be liable for indirect, consequential, or incidental business losses arising out of system usage or hardware malfunction.
+                YearInvo shall not be liable for indirect, consequential, or incidental business losses arising out of system usage or hardware malfunction.
               </p>
             </div>
 

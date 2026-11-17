@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   HelpCircle,
-  MessageSquare,
   Mail,
   Phone,
   BookOpen,
@@ -12,20 +11,11 @@ import {
   Search,
   ChevronDown,
   ChevronUp,
-  Send,
-  CheckCircle2,
-  ExternalLink,
-  MessageCircle,
   Headphones,
   Zap,
   Printer,
   Boxes,
   CreditCard,
-  X,
-  Bot,
-  User,
-  Paperclip,
-  ThumbsUp,
   Clock,
 } from 'lucide-react';
 
@@ -36,30 +26,18 @@ export const HelpSupportView: React.FC = () => {
   const [faqSearchQuery, setFaqSearchQuery] = useState<string>('');
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
 
-  // Live Chat Drawer State
-  const [isLiveChatOpen, setIsLiveChatOpen] = useState(false);
-  const [chatMessages, setChatMessages] = useState<Array<{ sender: 'bot' | 'user'; text: string; time: string }>>([
-    {
-      sender: 'bot',
-      text: 'Hello! 👋 Welcome to StockMaster Support. How can we help you with your POS or Inventory today?',
-      time: 'Just now',
-    },
-  ]);
-  const [inputMessage, setInputMessage] = useState('');
-
   // Bug / Feature Request Form State
   const [feedbackType, setFeedbackType] = useState<'bug' | 'feature'>('bug');
   const [feedbackTitle, setFeedbackTitle] = useState('');
   const [feedbackDesc, setFeedbackDesc] = useState('');
   const [feedbackSeverity, setFeedbackSeverity] = useState('Medium');
-  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
 
   // FAQs List
   const faqs = [
     {
       category: 'POS & Sales',
       question: 'How do I scan products using a USB or Bluetooth Barcode Scanner?',
-      answer: 'Simply plug in your USB barcode scanner into your computer or connect via Bluetooth. StockMaster automatically listens for hardware barcode scans when you are on the POS or Quick Sale page without needing to click any text box.',
+      answer: 'Simply plug in your USB barcode scanner into your computer or connect via Bluetooth. YearInvo automatically listens for hardware barcode scans when you are on the POS or Quick Sale page without needing to click any text box.',
     },
     {
       category: 'POS & Sales',
@@ -84,7 +62,7 @@ export const HelpSupportView: React.FC = () => {
     {
       category: 'General',
       question: 'Is my store sales data saved safely offline?',
-      answer: 'Yes! StockMaster stores all product items, customer ledgers, and transaction records securely in your browser local storage with instant auto-save backup.',
+      answer: 'Yes! YearInvo syncs your product items, customer ledgers, and transaction records to the cloud via Supabase, with a local cache on your device so sales keep working offline and sync when you are back online.',
     },
   ];
 
@@ -96,41 +74,7 @@ export const HelpSupportView: React.FC = () => {
     return matchesCat && matchesSearch;
   });
 
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputMessage.trim()) return;
 
-    const userText = inputMessage.trim();
-    const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-    setChatMessages((prev) => [...prev, { sender: 'user', text: userText, time: nowTime }]);
-    setInputMessage('');
-
-    // Simulated Auto-Reply Bot logic
-    setTimeout(() => {
-      let botReply = "Thank you for reaching out! Our support agent has received your query and will assist you shortly. You can also email us directly at support@stockmaster.app.";
-      if (userText.toLowerCase().includes('pos') || userText.toLowerCase().includes('sale')) {
-        botReply = "For POS counter queries, make sure your barcode scanner is connected. You can also use Quick Sale mode for instant checkout.";
-      } else if (userText.toLowerCase().includes('printer') || userText.toLowerCase().includes('print')) {
-        botReply = "To print 58mm/80mm receipts, click 'Print Receipt' on any order and set page margins to None in your print dialog.";
-      } else if (userText.toLowerCase().includes('due') || userText.toLowerCase().includes('credit')) {
-        botReply = "You can manage customer due payments under the 'Due Management' menu item in the sidebar.";
-      }
-
-      setChatMessages((prev) => [...prev, { sender: 'bot', text: botReply, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }]);
-    }, 800);
-  };
-
-  const handleFeedbackSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!feedbackTitle || !feedbackDesc) return;
-    setFeedbackSubmitted(true);
-    setTimeout(() => {
-      setFeedbackTitle('');
-      setFeedbackDesc('');
-      setFeedbackSubmitted(false);
-    }, 4000);
-  };
 
   return (
     <div className="space-y-6 pb-12 max-w-6xl mx-auto">
@@ -151,15 +95,15 @@ export const HelpSupportView: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-bold">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                Support Agents Online
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-xs font-bold">
+                <Mail className="w-3 h-3" />
+                Email: yearinvo@gmail.com
               </span>
             </div>
           </div>
 
           <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
-            Welcome to the StockMaster Support Center. Search FAQs, read documentation, contact customer support, or send a feature request.
+            Welcome to the YearInvo Support Center. Search FAQs, read documentation, contact customer support, or send a feature request.
           </p>
 
           {/* Navigation Sub-Tabs */}
@@ -194,33 +138,7 @@ export const HelpSupportView: React.FC = () => {
       {/* 1. CONTACT SUPPORT SECTION */}
       {activeTab === 'support' && (
         <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {/* Live Chat (Future Ready) */}
-            <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-4 hover:border-[#ff5c01] transition-all group">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="p-3 rounded-2xl bg-[#ff5c01]/10 text-[#ff5c01] group-hover:scale-110 transition-transform">
-                    <MessageSquare className="w-6 h-6" />
-                  </div>
-                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-[10px] uppercase border border-emerald-500/20">
-                    ● Live Chat Ready
-                  </span>
-                </div>
-                <h3 className="font-extrabold text-base text-slate-900 dark:text-slate-100">Live Chat Assistant</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                  Chat instantly with our AI support bot &amp; live agent for quick troubleshooting.
-                </p>
-              </div>
-
-              <button
-                onClick={() => setIsLiveChatOpen(true)}
-                className="w-full py-3 bg-[#ff5c01] hover:bg-[#e05100] text-white font-extrabold text-xs rounded-xl shadow-md shadow-[#ff5c01]/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <MessageSquare className="w-4 h-4" />
-                <span>Start Live Chat Now</span>
-              </button>
-            </div>
-
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {/* Email Support */}
             <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-4 hover:border-indigo-500 transition-all group">
               <div className="space-y-3">
@@ -237,12 +155,12 @@ export const HelpSupportView: React.FC = () => {
                   Send technical queries or invoice attachment requests directly to our support engineers.
                 </p>
                 <p className="font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400">
-                  support@stockmaster.app
+                  yearinvo@gmail.com
                 </p>
               </div>
 
               <a
-                href="mailto:support@stockmaster.app?subject=POS%20Support%20Request"
+                href="mailto:yearinvo@gmail.com?subject=POS%20Support%20Request"
                 className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-md shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Mail className="w-4 h-4" />
@@ -250,35 +168,30 @@ export const HelpSupportView: React.FC = () => {
               </a>
             </div>
 
-            {/* WhatsApp Support */}
-            <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-4 hover:border-emerald-500 transition-all group">
+            {/* FAQs — answers first, before emailing */}
+            <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-4 hover:border-[#ff5c01] transition-all group">
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="p-3 rounded-2xl bg-emerald-500/10 text-emerald-500 group-hover:scale-110 transition-transform">
-                    <MessageCircle className="w-6 h-6" />
+                  <div className="p-3 rounded-2xl bg-[#ff5c01]/10 text-[#ff5c01] group-hover:scale-110 transition-transform">
+                    <HelpCircle className="w-6 h-6" />
                   </div>
-                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-[10px] uppercase border border-emerald-500/20">
-                    Fast WhatsApp
+                  <span className="px-2.5 py-0.5 rounded-full bg-[#ff5c01]/10 text-[#ff5c01] font-bold text-[10px] uppercase border border-[#ff5c01]/20">
+                    Self-Help
                   </span>
                 </div>
-                <h3 className="font-extrabold text-base text-slate-900 dark:text-slate-100">WhatsApp Support</h3>
+                <h3 className="font-extrabold text-base text-slate-900 dark:text-slate-100">FAQs &amp; Answers</h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                  Direct message our hotline on WhatsApp for urgent store counter issues.
-                </p>
-                <p className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                  +880 1700-000000
+                  Most POS, printer, barcode and due-ledger questions are already answered in the FAQ section.
                 </p>
               </div>
 
-              <a
-                href="https://wa.me/8801700000000"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              <button
+                onClick={() => setActiveTab('faq')}
+                className="w-full py-3 bg-[#ff5c01] hover:bg-[#e05100] text-white font-extrabold text-xs rounded-xl shadow-md shadow-[#ff5c01]/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
-                <MessageCircle className="w-4 h-4" />
-                <span>Open WhatsApp Chat</span>
-              </a>
+                <HelpCircle className="w-4 h-4" />
+                <span>Browse FAQs</span>
+              </button>
             </div>
           </div>
 
@@ -486,24 +399,11 @@ export const HelpSupportView: React.FC = () => {
               Report a Bug or Request a Feature
             </h3>
             <p className="text-xs text-slate-500">
-              We continuously improve StockMaster based on merchant feedback.
+              We continuously improve YearInvo based on merchant feedback.
             </p>
           </div>
 
-          {feedbackSubmitted ? (
-            <div className="p-6 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-center space-y-2 animate-in fade-in">
-              <div className="w-12 h-12 rounded-full bg-emerald-500 text-white flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/20">
-                <CheckCircle2 className="w-6 h-6" />
-              </div>
-              <h4 className="font-extrabold text-sm text-emerald-600 dark:text-emerald-400">
-                Thank you! Submission Received.
-              </h4>
-              <p className="text-xs text-slate-600 dark:text-slate-300">
-                Our product engineering team will review your report shortly.
-              </p>
-            </div>
-          ) : (
-            <form onSubmit={handleFeedbackSubmit} className="space-y-4">
+            <div className="space-y-4">
               {/* Type Switcher */}
               <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl">
                 <button
@@ -535,7 +435,6 @@ export const HelpSupportView: React.FC = () => {
                 </label>
                 <input
                   type="text"
-                  required
                   value={feedbackTitle}
                   onChange={(e) => setFeedbackTitle(e.target.value)}
                   placeholder={feedbackType === 'bug' ? 'e.g. Thermal receipt margin cut off' : 'e.g. Add WhatsApp invoice sending'}
@@ -567,7 +466,6 @@ export const HelpSupportView: React.FC = () => {
                   Detailed Description *
                 </label>
                 <textarea
-                  required
                   rows={4}
                   value={feedbackDesc}
                   onChange={(e) => setFeedbackDesc(e.target.value)}
@@ -576,84 +474,25 @@ export const HelpSupportView: React.FC = () => {
                 />
               </div>
 
-              <button
-                type="submit"
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                There is no in-app ticket system — this opens your mail app and sends your report to yearinvo@gmail.com.
+              </p>
+
+              <a
+                href={`mailto:yearinvo@gmail.com?subject=${encodeURIComponent(
+                  `[YearInvo ${feedbackType === 'bug' ? 'Bug' : 'Feature'}] ${feedbackTitle || 'Untitled'}`
+                )}&body=${encodeURIComponent(
+                  `${feedbackType === 'bug' ? `Severity: ${feedbackSeverity}\n\n` : ''}${feedbackDesc || '(No description entered yet.)'}`
+                )}`}
                 className="w-full py-3 bg-[#ff5c01] hover:bg-[#e05100] text-white font-extrabold text-xs rounded-xl shadow-lg shadow-[#ff5c01]/25 transition-all cursor-pointer flex items-center justify-center gap-2"
               >
-                <Send className="w-4 h-4" />
-                <span>Submit Report to Engineering Team</span>
-              </button>
-            </form>
-          )}
+                <Mail className="w-4 h-4" />
+                <span>Email Report to yearinvo@gmail.com</span>
+              </a>
+            </div>
         </div>
       )}
 
-      {/* LIVE CHAT SIMULATOR DRAWER MODAL */}
-      {isLiveChatOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center sm:justify-end bg-slate-950/70 p-3 sm:p-6 animate-in fade-in">
-          <div className="w-full max-w-sm h-[520px] bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden my-auto">
-            {/* Live Chat Header */}
-            <div className="p-4 bg-slate-800/90 border-b border-slate-800 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="relative">
-                  <div className="w-9 h-9 rounded-full bg-[#ff5c01] text-white flex items-center justify-center font-bold text-xs shadow-md">
-                    <Bot className="w-5 h-5" />
-                  </div>
-                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-slate-900" />
-                </div>
-                <div>
-                  <h4 className="font-extrabold text-xs text-white">StockMaster Live Support</h4>
-                  <p className="text-[10px] text-emerald-400 font-medium">● Online Agent Connected</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsLiveChatOpen(false)}
-                className="p-1 rounded-full text-slate-400 hover:text-white bg-slate-800 cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Chat Body */}
-            <div className="flex-1 p-4 overflow-y-auto space-y-3 custom-scrollbar bg-slate-950/50 text-xs">
-              {chatMessages.map((msg, i) => (
-                <div
-                  key={i}
-                  className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
-                >
-                  <div
-                    className={`max-w-[85%] p-3 rounded-2xl leading-relaxed ${
-                      msg.sender === 'user'
-                        ? 'bg-[#ff5c01] text-white rounded-br-none font-medium'
-                        : 'bg-slate-800 text-slate-200 border border-slate-700/60 rounded-bl-none'
-                    }`}
-                  >
-                    {msg.text}
-                  </div>
-                  <span className="text-[9px] text-slate-500 mt-1 font-mono">{msg.time}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Chat Input */}
-            <form onSubmit={handleSendMessage} className="p-3 bg-slate-900 border-t border-slate-800 flex items-center gap-2">
-              <input
-                type="text"
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                placeholder="Type your message..."
-                className="flex-1 px-3 py-2 text-xs bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-[#ff5c01]"
-              />
-              <button
-                type="submit"
-                className="p-2 bg-[#ff5c01] hover:bg-[#e05100] text-white rounded-xl transition-colors cursor-pointer"
-              >
-                <Send className="w-4 h-4" />
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -44,7 +44,7 @@ const GoogleIcon: React.FC = () => (
 );
 
 export const LoginView: React.FC = () => {
-  const { login, signup, loginWithGoogle, sendLoginCode, verifyLoginCode, sendFirebasePasswordReset, settings, language, setLanguage, t, enterDemoMode, exchangeRates } = useApp();
+  const { login, signup, loginWithGoogle, sendLoginCode, verifyLoginCode, sendSupabasePasswordReset, settings, language, setLanguage, t, enterDemoMode, exchangeRates } = useApp();
 
   const [mode, setMode] = useState<'landing' | 'login' | 'signup' | 'forgot'>('landing');
   const [email, setEmail] = useState('');
@@ -160,7 +160,7 @@ export const LoginView: React.FC = () => {
     }
 
     setForgotLoading(true);
-    const res = await sendFirebasePasswordReset(forgotEmail);
+    const res = await sendSupabasePasswordReset(forgotEmail);
     setForgotLoading(false);
 
     if (res.success) {

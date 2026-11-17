@@ -4,9 +4,15 @@ import {
   TeamMember,
   TeamRole,
   TeamPermissions,
-  TeamInvitation,
   roleDefaultPermissions,
 } from '../../types';
+import {
+  buildInvitationLink,
+  createInvitation,
+  listInvitations,
+  revokeInvitation,
+  type InvitationListItem,
+} from '../../services/teamInvitations';
 import {
   Users,
   UserPlus,
@@ -185,12 +191,11 @@ const PERMISSION_GROUPS: {
 export const TeamManagementView: React.FC = () => {
   const {
     user,
-    settings,
     teamMembers: contextTeamMembers,
     saveTeamMembers: contextSaveTeamMembers,
   } = useApp();
 
-  // Connected to real-time cloud Firestore synchronized state
+  // Synced with Supabase cloud state
   const teamMembers = contextTeamMembers || [];
 
   const saveTeamMembers = (updated: TeamMember[]) => {
@@ -207,8 +212,11 @@ export const TeamManagementView: React.FC = () => {
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
-  // Invitations state
-  const [invitations, setInvitations] = useState<TeamInvitation[]>([]);
+  // Invitations state (Supabase-native; no email is sent — the owner shares a link)
+  const [invitations, setInvitations] = useState<InvitationListItem[]>([]);
+  const [inviteTokens, setInviteTokens] = useState<Record<string, string>>({});
+  const [lastInviteLink, setLastInviteLink] = useState<{ email: string; link: string } | null>(null);
+  const [copiedLink, setCopiedLink] = useState(false);
   const [loadingInvitations, setLoadingInvitations] = useState(false);
   const [resendingId, setResendingId] = useState<string | null>(null);
   const [revokingId, setRevokingId] = useState<string | null>(null);
@@ -231,18 +239,24 @@ export const TeamManagementView: React.FC = () => {
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
   const [actionNotice, setActionNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  // Load invitations from server
+  // Load invitations from Supabase (team_invitations). The table stores no
+  // invitee name, so display names are enriched from the local member list
+  // (same email) and fall back to the email address.
   const fetchInvitations = async () => {
     if (!user?.id) return;
     try {
       setLoadingInvitations(true);
-      const res = await fetch(`/api/team/invitations?storeId=${encodeURIComponent(user.id)}`);
-      const data = await res.json();
-      if (res.ok && Array.isArray(data.invitations)) {
-        setInvitations(data.invitations);
-      }
-    } catch (e) {
-      console.warn('[Invitations] Fetch notice:', e);
+      const rows = await listInvitations(user.id);
+      const tokens: Record<string, string> = {};
+      const enriched = rows.map((inv) => {
+        tokens[inv.id] = inv.token;
+        const member = teamMembers.find((m) => m.email.toLowerCase() === inv.invitedEmail.toLowerCase());
+        return member ? { ...inv, name: member.name } : inv;
+      });
+      setInviteTokens(tokens);
+      setInvitations(enriched);
+    } catch (e: any) {
+      console.warn('[Invitations] Fetch notice:', e?.message || e);
     } finally {
       setLoadingInvitations(false);
     }
@@ -294,7 +308,7 @@ export const TeamManagementView: React.FC = () => {
     }));
   };
 
-  // Submit Handler: Creates team member and delivers email invitation via Resend
+  // Submit Handler: Creates team member and a Supabase invitation link
   const handleSaveMember = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
@@ -328,37 +342,19 @@ export const TeamManagementView: React.FC = () => {
       return;
     }
 
-    // New Invitation Flow -> Calls Server Endpoint to send email via Resend
+    // New Invitation Flow -> Supabase row + shareable link (no email is sent).
     setIsSending(true);
+    setLastInviteLink(null);
 
     try {
-      const storeId = user?.id || 'default_store';
-      const storeName = settings.brandName || user?.storeName || user?.name || 'Your Store';
+      const ownerId = user?.id || 'default_store';
       const ownerName = user?.name || 'Store Owner';
 
-      const response = await fetch('/api/team/invite', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          storeId,
-          storeName,
-          name: cleanName,
-          email: cleanEmail,
-          phone: formPhone.trim(),
-          role: formRole,
-          customPermissions: formPermissions,
-          invitedBy: storeId,
-          invitedByName: ownerName,
-        }),
-      });
+      const invitation = await createInvitation(ownerId, cleanEmail, formRole);
+      const inviteLink = buildInvitationLink(invitation.token);
+      setLastInviteLink({ email: cleanEmail, link: inviteLink });
 
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to send invitation email.');
-      }
-
-      setFormSuccess(`Invitation email successfully sent to ${cleanEmail}!`);
+      setFormSuccess(`Invitation created for ${cleanEmail}. Share the link below with them — no email is sent automatically.`);
 
       // Refresh invitations list and local team members
       await fetchInvitations();
@@ -373,7 +369,7 @@ export const TeamManagementView: React.FC = () => {
         joinedDate: new Date().toISOString().split('T')[0],
         lastActive: 'Invited',
         invitedBy: ownerName,
-        invitationId: data.invitation?.id,
+        invitationId: invitation.id,
         customPermissions: formPermissions,
       };
 
@@ -388,38 +384,46 @@ export const TeamManagementView: React.FC = () => {
         setActiveTab('invitations');
       }, 1200);
     } catch (err: any) {
-      setFormError(err.message || 'Email delivery failed. Please check server configuration.');
+      setFormError(err.message || 'Could not create the invitation. Please try again.');
       setIsSending(false);
     }
   };
 
-  // Resend invitation action
+  // "Resend" = show the invitation link again so the owner can share it.
+  // No email is sent — email delivery was part of the dead /api flow.
   const handleResendInvite = async (invitationId: string, email: string) => {
-    if (!user?.id) return;
+    const token = inviteTokens[invitationId];
+    if (!token) {
+      setActionNotice({ type: 'error', message: 'No invitation link found for this invitation. Create a new invitation instead.' });
+      return;
+    }
     setResendingId(invitationId);
-    setActionNotice(null);
-
+    const link = buildInvitationLink(token);
+    setLastInviteLink({ email, link });
     try {
-      const res = await fetch('/api/team/resend-invite', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          invitationId,
-          storeId: user.id,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Failed to resend invitation email.');
-      }
-
-      setActionNotice({ type: 'success', message: `Invitation email resent to ${email}` });
-      await fetchInvitations();
-    } catch (err: any) {
-      setActionNotice({ type: 'error', message: err.message || 'Failed to resend invitation.' });
+      await navigator.clipboard.writeText(link);
+      setActionNotice({ type: 'success', message: `Invitation link for ${email} copied — share it with them (no email is sent).` });
+    } catch {
+      setActionNotice({ type: 'success', message: `Invitation link for ${email} is shown below — copy and share it (no email is sent).` });
     } finally {
       setResendingId(null);
+    }
+    setActiveTab('invitations');
+  };
+
+  // Copy a pending invitation link (used by the per-row Copy Link button).
+  const handleCopyInviteLink = async (invitationId: string, email: string) => {
+    const token = inviteTokens[invitationId];
+    if (!token) return;
+    const link = buildInvitationLink(token);
+    setLastInviteLink({ email, link });
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopiedLink(true);
+      setActionNotice({ type: 'success', message: `Invitation link for ${email} copied to clipboard.` });
+      setTimeout(() => setCopiedLink(false), 2000);
+    } catch {
+      setActionNotice({ type: 'success', message: `Invitation link for ${email} is shown below — copy it manually.` });
     }
   };
 
@@ -434,19 +438,7 @@ export const TeamManagementView: React.FC = () => {
     setActionNotice(null);
 
     try {
-      const res = await fetch('/api/team/revoke-invite', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          invitationId,
-          storeId: user.id,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Failed to revoke invitation.');
-      }
+      await revokeInvitation(invitationId);
 
       setActionNotice({ type: 'success', message: `Invitation for ${name} has been revoked.` });
       await fetchInvitations();
@@ -515,7 +507,7 @@ export const TeamManagementView: React.FC = () => {
               <span>Team Management</span>
             </h1>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xl">
-              Invite cashiers, managers, and staff with secure single-use email invitations powered by Resend.
+              Invite cashiers, managers, and staff with a single-use invitation link. Share the link yourself — no email is sent automatically.
             </p>
           </div>
 
@@ -551,6 +543,37 @@ export const TeamManagementView: React.FC = () => {
             >
               <X className="w-3.5 h-3.5" />
             </button>
+          </div>
+        )}
+
+        {/* Invitation Link Banner — shown after creating / re-copying a link */}
+        {lastInviteLink && (
+          <div className="mt-4 p-3 rounded-xl border bg-sky-500/10 border-sky-500/30 text-sky-300 text-xs">
+            <p className="font-bold text-sky-200">Invitation link for {lastInviteLink.email} (valid 7 days)</p>
+            <div className="flex items-center gap-2 mt-1.5">
+              <span className="flex-1 min-w-0 font-mono break-all">{lastInviteLink.link}</span>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(lastInviteLink.link);
+                    setCopiedLink(true);
+                    setTimeout(() => setCopiedLink(false), 2000);
+                  } catch {}
+                }}
+                className="shrink-0 px-2.5 py-1 bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 rounded-lg text-[11px] font-bold cursor-pointer"
+              >
+                {copiedLink ? 'Copied!' : 'Copy Link'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setLastInviteLink(null)}
+                className="shrink-0 p-1 hover:bg-white/10 rounded-lg"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <p className="text-[11px] text-sky-300/70 mt-1">Share this link with the staff member yourself — no email is sent automatically.</p>
           </div>
         )}
 
@@ -601,7 +624,7 @@ export const TeamManagementView: React.FC = () => {
           }`}
         >
           <Mail className="w-4 h-4" />
-          <span>Email Invitations ({invitations.length})</span>
+          <span>Invitations ({invitations.length})</span>
           {pendingInvitesCount > 0 && (
             <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
           )}
@@ -815,21 +838,21 @@ export const TeamManagementView: React.FC = () => {
               <Users className="w-12 h-12 text-slate-600 mx-auto mb-3" />
               <h3 className="text-base font-bold text-white">No Team Members Found</h3>
               <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-                Try adjusting your search criteria or click "Invite Team Member" to send an email invitation.
+                Try adjusting your search criteria or click "Invite Team Member" to create an invitation link.
               </p>
             </div>
           )}
         </>
       )}
 
-      {/* TAB 2: Email Invitations List */}
+      {/* TAB 2: Invitations List */}
       {activeTab === 'invitations' && (
         <div className="space-y-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg">
             <div className="p-4 border-b border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-[#ff5c01]" />
-                <h3 className="text-sm font-bold text-white">Sent Email Invitations</h3>
+                <h3 className="text-sm font-bold text-white">Invitations</h3>
               </div>
               <button
                 onClick={fetchInvitations}
@@ -913,7 +936,7 @@ export const TeamManagementView: React.FC = () => {
                                 onClick={() => handleResendInvite(inv.id, inv.invitedEmail)}
                                 disabled={resendingId === inv.id}
                                 className="px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-lg text-[11px] font-semibold flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
-                                title="Resend email with new secure single-use token"
+                                title="Show / copy the invitation link again (no email is sent)"
                               >
                                 {resendingId === inv.id ? (
                                   <Loader2 className="w-3 h-3 animate-spin" />
@@ -921,6 +944,16 @@ export const TeamManagementView: React.FC = () => {
                                   <RotateCw className="w-3 h-3" />
                                 )}
                                 <span>Resend</span>
+                              </button>
+                            )}
+
+                            {isPending && (
+                              <button
+                                onClick={() => handleCopyInviteLink(inv.id, inv.invitedEmail)}
+                                className="px-2.5 py-1 bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-500/30 rounded-lg text-[11px] font-semibold flex items-center gap-1 transition-all cursor-pointer"
+                                title="Copy the invitation link to share it yourself"
+                              >
+                                <span>Copy Link</span>
                               </button>
                             )}
 
@@ -953,7 +986,7 @@ export const TeamManagementView: React.FC = () => {
                 <Inbox className="w-10 h-10 mx-auto mb-2 text-slate-600" />
                 <p className="text-xs font-semibold text-slate-400">No invitations found.</p>
                 <p className="text-[11px] text-slate-500 mt-0.5">
-                  Click "Invite Team Member" to send an email invitation to a new staff member.
+                  Click "Invite Team Member" to create an invitation link for a new staff member.
                 </p>
               </div>
             )}
@@ -984,7 +1017,7 @@ export const TeamManagementView: React.FC = () => {
                 <p className="text-xs text-slate-400 mt-0.5">
                   {editingMember
                     ? 'Update custom permission flags for this staff member.'
-                    : 'A secure single-use invitation email will be sent via Resend.'}
+                    : 'A single-use invitation link will be created — share it with your staff member yourself; no email is sent.'}
                 </p>
               </div>
               <button
@@ -1008,6 +1041,28 @@ export const TeamManagementView: React.FC = () => {
               <div className="mx-6 mt-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-start gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                 <span>{formSuccess}</span>
+              </div>
+            )}
+
+            {formSuccess && lastInviteLink && (
+              <div className="mx-6 mt-3 p-3 rounded-xl bg-sky-500/10 border border-sky-500/30 text-sky-300 text-xs">
+                <p className="font-bold text-sky-200">Invitation link (valid 7 days) — copy and share it:</p>
+                <div className="flex items-center gap-2 mt-1.5">
+                  <span className="flex-1 min-w-0 font-mono break-all">{lastInviteLink.link}</span>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(lastInviteLink.link);
+                        setCopiedLink(true);
+                        setTimeout(() => setCopiedLink(false), 2000);
+                      } catch {}
+                    }}
+                    className="shrink-0 px-2.5 py-1 bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 rounded-lg text-[11px] font-bold cursor-pointer"
+                  >
+                    {copiedLink ? 'Copied!' : 'Copy Link'}
+                  </button>
+                </div>
               </div>
             )}
 
@@ -1160,12 +1215,12 @@ export const TeamManagementView: React.FC = () => {
                   {isSending ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Sending Invitation Email...</span>
+                      <span>Creating Invitation...</span>
                     </>
                   ) : (
                     <>
                       <Send className="w-3.5 h-3.5" />
-                      <span>{editingMember ? 'Save Permissions' : 'Send Invite'}</span>
+                      <span>{editingMember ? 'Save Permissions' : 'Create Invite Link'}</span>
                     </>
                   )}
                 </button>

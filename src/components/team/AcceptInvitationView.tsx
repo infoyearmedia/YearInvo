@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { supabase } from '../../lib/supabase';
+import { acceptInvitation, getInvitationByToken } from '../../services/teamInvitations';
 import {
   Users,
   ShieldCheck,
@@ -55,15 +56,14 @@ export const AcceptInvitationView: React.FC<AcceptInvitationViewProps> = ({ toke
   const [accepting, setAccepting] = useState(false);
   const [acceptedSuccess, setAcceptedSuccess] = useState(false);
 
-  // 1. Fetch invitation details on mount
+  // 1. Fetch invitation details on mount (Supabase team_invitations table)
   useEffect(() => {
     let isMounted = true;
     async function fetchDetails() {
       try {
         setLoading(true);
         setErrorMsg(null);
-        const res = await fetch(`/api/team/invitation-details?token=${encodeURIComponent(token)}`);
-        const data = await res.json();
+        const data = await getInvitationByToken(token);
 
         if (isMounted) {
           setInvitation(data);
@@ -87,7 +87,7 @@ export const AcceptInvitationView: React.FC<AcceptInvitationViewProps> = ({ toke
         }
       } catch (err: any) {
         if (isMounted) {
-          setErrorMsg(err.message || 'Failed to connect to server. Please try again.');
+          setErrorMsg('Could not load this invitation. Check the link and try again.');
         }
       } finally {
         if (isMounted) {
@@ -121,21 +121,10 @@ export const AcceptInvitationView: React.FC<AcceptInvitationViewProps> = ({ toke
     setAuthError(null);
 
     try {
-      const res = await fetch('/api/team/accept-invite', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          token,
-          userId: user.id,
-          userEmail: user.email,
-          userName: user.name || invitation?.name || '',
-        }),
+      await acceptInvitation(token, user.id, {
+        name: user.name || invitation?.name || '',
+        email: user.email,
       });
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Failed to accept invitation.');
-      }
 
       setAcceptedSuccess(true);
       if (refreshUserData) {
@@ -157,7 +146,7 @@ export const AcceptInvitationView: React.FC<AcceptInvitationViewProps> = ({ toke
     }
   };
 
-  // 3. Handle Firebase signup
+  // 3. Handle Supabase signup
   const handleSignupAndAccept = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError(null);
@@ -196,20 +185,10 @@ export const AcceptInvitationView: React.FC<AcceptInvitationViewProps> = ({ toke
       const userId = sbUser?.id || `user_${Date.now()}`;
 
       // Accept invitation immediately with the new user credentials
-      const res = await fetch('/api/team/accept-invite', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          token,
-          userId,
-          userEmail: cleanEmail,
-          userName: cleanName,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Account created, but failed to link invitation.');
+      try {
+        await acceptInvitation(token, userId, { name: cleanName, email: cleanEmail });
+      } catch (acceptErr: any) {
+        throw new Error(`Account created, but failed to link invitation: ${acceptErr?.message || 'Please try signing in and accepting again.'}`);
       }
 
       setAcceptedSuccess(true);
@@ -250,20 +229,13 @@ export const AcceptInvitationView: React.FC<AcceptInvitationViewProps> = ({ toke
       const userId = sbUser?.id || '';
 
       // Accept invitation immediately
-      const res = await fetch('/api/team/accept-invite', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          token,
-          userId,
-          userEmail: cleanEmail,
-          userName: sbUser?.user_metadata?.full_name || invitation?.name || '',
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Signed in, but failed to link invitation.');
+      try {
+        await acceptInvitation(token, userId, {
+          name: sbUser?.user_metadata?.full_name || invitation?.name || '',
+          email: cleanEmail,
+        });
+      } catch (acceptErr: any) {
+        throw new Error(`Signed in, but failed to link invitation: ${acceptErr?.message || 'Please try again.'}`);
       }
 
       setAcceptedSuccess(true);

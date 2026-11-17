@@ -23,11 +23,18 @@ interface ShareInvoiceModalProps {
 }
 
 export const ShareInvoiceModal: React.FC<ShareInvoiceModalProps> = ({ sale, isOpen, onClose }) => {
-  const { settings, user } = useApp();
-  const symbol = settings.currency || '৳';
+  const { settings, user, customers, formatCurrency } = useApp();
+
   const [copied, setCopied] = useState(false);
 
   if (!isOpen || !sale) return null;
+
+  // Sale carries no email; resolve the customer the same way other views do
+  // (customers.find by sale.customerId) and use their email when one exists.
+  const saleCustomer = sale.customerId
+    ? customers.find((c) => c.id === sale.customerId)
+    : undefined;
+  const customerEmail = saleCustomer?.email || '';
 
   const rawBrand = settings.brandName || user?.brandName || '';
   const storeName = getCustomerStoreName(rawBrand) || rawBrand || 'Our Store';
@@ -42,12 +49,12 @@ Date: ${new Date(sale.date).toLocaleDateString()} ${new Date(sale.date).toLocale
 Customer: ${sale.customerName || 'Valued Customer'}
 
 ITEMS:
-${sale.items.map((item) => `- ${item.productName} x${item.quantity} = ${symbol}${(item.total || 0).toLocaleString()}`).join('\n')}
+${sale.items.map((item) => `- ${item.productName} x${item.quantity} = ${formatCurrency((item.total || 0))}`).join('\n')}
 
-Subtotal: ${symbol}${(sale.subtotal || 0).toLocaleString()}
-${(sale.discount || 0) > 0 ? `Discount: -${symbol}${(sale.discount || 0).toLocaleString()}\n` : ''}${(sale.tax || 0) > 0 ? `Tax: +${symbol}${(sale.tax || 0).toLocaleString()}\n` : ''}GRAND TOTAL: ${symbol}${(sale.total || 0).toLocaleString()}
-Paid Amount: ${symbol}${(sale.paidAmount || 0).toLocaleString()}
-${(sale.dueAmount || 0) > 0 ? `DUE AMOUNT: ${symbol}${(sale.dueAmount || 0).toLocaleString()} (Partially Paid)\n` : 'STATUS: Fully Paid\n'}Payment Method: ${sale.paymentMethod}
+Subtotal: ${formatCurrency((sale.subtotal || 0))}
+${(sale.discount || 0) > 0 ? `Discount: -${formatCurrency((sale.discount || 0))}\n` : ''}${(sale.tax || 0) > 0 ? `Tax: +${formatCurrency((sale.tax || 0))}\n` : ''}GRAND TOTAL: ${formatCurrency((sale.total || 0))}
+Paid Amount: ${formatCurrency((sale.paidAmount || 0))}
+${(sale.dueAmount || 0) > 0 ? `DUE AMOUNT: ${formatCurrency((sale.dueAmount || 0))} (Partially Paid)\n` : 'STATUS: Fully Paid\n'}Payment Method: ${sale.paymentMethod}
 ${storePhone ? `Contact: ${storePhone}\n` : ''}Thank you for your business!
 `.trim();
 
@@ -82,7 +89,7 @@ ${storePhone ? `Contact: ${storePhone}\n` : ''}Thank you for your business!
 
   const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareSummaryWithUrl)}`;
   const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(currentUrl)}&text=${encodeURIComponent(invoiceText)}`;
-  const emailUrl = `mailto:${sale.customerPhone ? '' : ''}?subject=${encodeURIComponent(`Invoice ${sale.invoiceNo} from ${storeName}`)}&body=${encodeURIComponent(shareSummaryWithUrl)}`;
+  const emailUrl = `mailto:${customerEmail}?subject=${encodeURIComponent(`Invoice ${sale.invoiceNo} from ${storeName}`)}&body=${encodeURIComponent(shareSummaryWithUrl)}`;
   const smsUrl = `sms:${sale.customerPhone || ''}?body=${encodeURIComponent(shareSummaryWithUrl)}`;
 
   return (
@@ -145,16 +152,19 @@ ${storePhone ? `Contact: ${storePhone}\n` : ''}Thank you for your business!
                 <span>Telegram</span>
               </a>
 
-              {/* Email */}
-              <a
-                href={emailUrl}
-                className="p-3 rounded-2xl bg-indigo-500/10 hover:bg-indigo-500 text-indigo-600 hover:text-white border border-indigo-500/20 transition-all flex items-center gap-2.5 font-bold text-xs group"
-              >
-                <div className="w-8 h-8 rounded-xl bg-indigo-500 text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                  <Mail className="w-4 h-4" />
-                </div>
-                <span>Email</span>
-              </a>
+              {/* Email — only shown when the customer has an email on file,
+                  so it never opens with an empty recipient. */}
+              {customerEmail && (
+                <a
+                  href={emailUrl}
+                  className="p-3 rounded-2xl bg-indigo-500/10 hover:bg-indigo-500 text-indigo-600 hover:text-white border border-indigo-500/20 transition-all flex items-center gap-2.5 font-bold text-xs group"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-indigo-500 text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                    <Mail className="w-4 h-4" />
+                  </div>
+                  <span>Email</span>
+                </a>
+              )}
 
               {/* SMS */}
               <a
@@ -211,7 +221,7 @@ ${storePhone ? `Contact: ${storePhone}\n` : ''}Thank you for your business!
                   ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
                   : 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
               }`}>
-                {sale.dueAmount > 0 ? `Partially Paid (Due: ${symbol}${sale.dueAmount})` : 'Fully Paid'}
+                {sale.dueAmount > 0 ? `Partially Paid (Due: ${formatCurrency(sale.dueAmount)})` : 'Fully Paid'}
               </span>
             </div>
 
@@ -221,7 +231,7 @@ ${storePhone ? `Contact: ${storePhone}\n` : ''}Thank you for your business!
               <p><strong>Items ({sale.items.length}):</strong></p>
               <div className="pl-2 space-y-0.5 text-slate-600 dark:text-slate-400">
                 {sale.items.map((item, idx) => (
-                  <p key={idx}>• {item.productName} x{item.quantity} ({symbol}{item.total})</p>
+                  <p key={idx}>• {item.productName} x{item.quantity} ({formatCurrency(item.total)})</p>
                 ))}
               </div>
             </div>
@@ -229,16 +239,16 @@ ${storePhone ? `Contact: ${storePhone}\n` : ''}Thank you for your business!
             <div className="pt-2 border-t border-slate-200 dark:border-slate-700 font-sans space-y-1">
               <div className="flex justify-between text-slate-600 dark:text-slate-400">
                 <span>Grand Total:</span>
-                <span className="font-bold text-slate-900 dark:text-white">{symbol} {(sale.total || 0).toLocaleString()}</span>
+                <span className="font-bold text-slate-900 dark:text-white">{formatCurrency((sale.total || 0))}</span>
               </div>
               <div className="flex justify-between text-slate-600 dark:text-slate-400">
                 <span>Paid Amount:</span>
-                <span className="font-bold text-emerald-600 dark:text-emerald-400">{symbol} {(sale.paidAmount || 0).toLocaleString()}</span>
+                <span className="font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency((sale.paidAmount || 0))}</span>
               </div>
               {(sale.dueAmount || 0) > 0 && (
                 <div className="flex justify-between font-bold text-rose-600 dark:text-rose-400">
                   <span>Due Amount:</span>
-                  <span>{symbol} {(sale.dueAmount || 0).toLocaleString()}</span>
+                  <span>{formatCurrency((sale.dueAmount || 0))}</span>
                 </div>
               )}
             </div>

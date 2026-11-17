@@ -11,8 +11,7 @@ interface ShareDueModalProps {
 }
 
 export const ShareDueModal: React.FC<ShareDueModalProps> = ({ customer, isOpen, onClose }) => {
-  const { settings, user, language } = useApp();
-  const symbol = settings.currency || '৳';
+  const { settings, user, language, formatCurrency } = useApp();
   const [copied, setCopied] = useState(false);
 
   if (!isOpen || !customer) return null;
@@ -29,7 +28,7 @@ export const ShareDueModal: React.FC<ShareDueModalProps> = ({ customer, isOpen, 
 ----------------------------------
 Customer: ${customer.name}
 Phone: ${customer.phone || 'N/A'}
-Total Outstanding Due: ${symbol}${(customer.totalDue || 0).toLocaleString()}
+Total Outstanding Due: ${formatCurrency((customer.dueAmount || 0))}
 
 🔗 View Live Real-Time Statement & History:
 ${liveShareUrl}
@@ -81,7 +80,7 @@ ${storePhone ? `Contact Store: ${storePhone}\n` : ''}Thank you!
                 {isBn ? 'বাকির হিসাব শেয়ার করুন' : 'Share Customer Due Statement'}
               </h3>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                {customer.name} • {symbol}{(customer.totalDue || 0).toLocaleString()} {isBn ? 'বাকি' : 'Due'}
+                {customer.name} • {formatCurrency((customer.dueAmount || 0))} {isBn ? 'বাকি' : 'Due'}
               </p>
             </div>
           </div>
@@ -196,14 +195,14 @@ ${storePhone ? `Contact Store: ${storePhone}\n` : ''}Thank you!
                 <span>{storeName}</span>
               </div>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-600 border border-rose-500/20">
-                Current Due: {symbol}{(customer.totalDue || 0).toLocaleString()}
+                Current Due: {formatCurrency((customer.dueAmount || 0))}
               </span>
             </div>
 
             <div className="space-y-1 pt-1 text-[11px] text-slate-700 dark:text-slate-300">
               <p><strong>Customer:</strong> {customer.name}</p>
               <p><strong>Phone:</strong> {customer.phone || 'N/A'}</p>
-              <p><strong>Outstanding Balance:</strong> {symbol} {(customer.totalDue || 0).toLocaleString()}</p>
+              <p><strong>Outstanding Balance:</strong> {formatCurrency((customer.dueAmount || 0))}</p>
               <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-sans font-bold pt-1">
                 ✓ Customers opening the link see live real-time updates as you record payments or new sales.
               </p>

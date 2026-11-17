@@ -2,7 +2,6 @@ import React from 'react';
 import { useApp } from '../../context/AppContext';
 import { getCustomerStoreName } from '../../utils/brand';
 import {
-  Store,
   CheckCircle,
   AlertCircle,
   Printer,
@@ -31,8 +30,7 @@ export const LivePublicView: React.FC<LivePublicViewProps> = ({
   invoiceNo,
   onExitLiveView,
 }) => {
-  const { customers, sales, dueCollections, settings, user, language } = useApp();
-  const symbol = settings.currency || '৳';
+  const { customers, sales, dueCollections, settings, user, language, formatCurrency } = useApp();
   const isBn = language === 'bn';
 
   const rawBrand = settings.brandName || user?.brandName || '';
@@ -77,7 +75,7 @@ export const LivePublicView: React.FC<LivePublicViewProps> = ({
 
   const whatsappStoreUrl = storePhone
     ? `https://api.whatsapp.com/send?phone=${storePhone.replace(/[^0-9]/g, '')}&text=${encodeURIComponent(
-        `Hello ${storeName}, I am viewing my live account statement. My current balance is ${symbol}${liveDueBalance}.`
+        `Hello ${storeName}, I am viewing my live account statement. My current balance is ${formatCurrency(liveDueBalance)}.`
       )}`
     : '#';
 
@@ -91,8 +89,8 @@ export const LivePublicView: React.FC<LivePublicViewProps> = ({
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
             </span>
-            <span>{isBn ? '🔴 লাইভ রিয়েল-টাইম স্টেটমেন্ট (Live Statement)' : '🔴 LIVE REAL-TIME STATEMENT'}</span>
-            <span className="hidden sm:inline-block opacity-80 font-normal">| Auto-Updated on Changes</span>
+            <span>{isBn ? 'কাস্টমার স্টেটমেন্ট (এই ডিভাইসে সংরক্ষিত তথ্য)' : 'CUSTOMER STATEMENT — Saved on this device'}</span>
+            <span className="hidden sm:inline-block opacity-80 font-normal">| Static snapshot — not live-synced</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -118,10 +116,6 @@ export const LivePublicView: React.FC<LivePublicViewProps> = ({
         {/* Store Header Branding */}
         <div className="p-6 sm:p-8 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50/50 dark:bg-slate-900/50">
           <div className="space-y-1">
-            <div className="flex items-center gap-2 text-[#ff5c01] font-black text-xs uppercase tracking-wider">
-              <Store className="w-4 h-4" />
-              <span>Verified Merchant Partner</span>
-            </div>
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{storeName}</h1>
             <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400 font-medium pt-1">
               {storePhone && (
@@ -187,7 +181,7 @@ export const LivePublicView: React.FC<LivePublicViewProps> = ({
                       Live Outstanding Balance
                     </span>
                     <h3 className={`text-3xl font-black mt-1 ${liveDueBalance > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
-                      {symbol} {liveDueBalance.toLocaleString()}
+                      {formatCurrency(liveDueBalance)}
                     </h3>
                     <div className="mt-2 flex items-center justify-end gap-1.5">
                       {liveDueBalance > 0 ? (
@@ -251,12 +245,12 @@ export const LivePublicView: React.FC<LivePublicViewProps> = ({
                               <td className="p-3.5 text-slate-500 font-mono text-[11px]">
                                 {new Date(s.date).toLocaleString()}
                               </td>
-                              <td className="p-3.5 text-right font-bold">{symbol} {s.total.toLocaleString()}</td>
+                              <td className="p-3.5 text-right font-bold">{formatCurrency(s.total)}</td>
                               <td className="p-3.5 text-right text-emerald-600 dark:text-emerald-400 font-bold">
-                                {symbol} {s.paidAmount.toLocaleString()}
+                                {formatCurrency(s.paidAmount)}
                               </td>
                               <td className="p-3.5 text-right text-rose-600 dark:text-rose-400 font-black">
-                                {symbol} {s.dueAmount.toLocaleString()}
+                                {formatCurrency(s.dueAmount)}
                               </td>
                               <td className="p-3.5 text-center">
                                 <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
@@ -301,7 +295,7 @@ export const LivePublicView: React.FC<LivePublicViewProps> = ({
                               </td>
                               <td className="p-3.5 font-bold text-slate-800 dark:text-slate-200">{col.paymentMethod}</td>
                               <td className="p-3.5 text-right font-black text-emerald-600 dark:text-emerald-400">
-                                + {symbol} {col.amountPaid.toLocaleString()}
+                                + {formatCurrency(col.amountPaid)}
                               </td>
                               <td className="p-3.5 text-slate-400 text-[11px]">{col.note || 'Due payment collection'}</td>
                             </tr>
@@ -347,11 +341,11 @@ export const LivePublicView: React.FC<LivePublicViewProps> = ({
                         <div>
                           <p className="font-bold text-slate-800 dark:text-slate-200">{item.productName}</p>
                           <p className="text-[10px] text-slate-400 font-mono">
-                            {item.quantity} x {symbol}{item.sellingPrice}
+                            {item.quantity} x {formatCurrency(item.sellingPrice)}
                           </p>
                         </div>
                         <span className="font-black text-slate-900 dark:text-white">
-                          {symbol} {item.total.toLocaleString()}
+                          {formatCurrency(item.total)}
                         </span>
                       </div>
                     ))}
@@ -362,32 +356,32 @@ export const LivePublicView: React.FC<LivePublicViewProps> = ({
                 <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-1.5 text-xs font-medium">
                   <div className="flex justify-between text-slate-500">
                     <span>Subtotal</span>
-                    <span>{symbol} {targetInvoice.subtotal.toLocaleString()}</span>
+                    <span>{formatCurrency(targetInvoice.subtotal)}</span>
                   </div>
                   {targetInvoice.discount > 0 && (
                     <div className="flex justify-between text-emerald-600">
                       <span>Discount</span>
-                      <span>- {symbol} {targetInvoice.discount.toLocaleString()}</span>
+                      <span>- {formatCurrency(targetInvoice.discount)}</span>
                     </div>
                   )}
                   {targetInvoice.tax > 0 && (
                     <div className="flex justify-between text-slate-500">
                       <span>Tax</span>
-                      <span>+ {symbol} {targetInvoice.tax.toLocaleString()}</span>
+                      <span>+ {formatCurrency(targetInvoice.tax)}</span>
                     </div>
                   )}
                   <div className="flex justify-between text-sm font-black text-slate-900 dark:text-white pt-2 border-t border-slate-200 dark:border-slate-700">
                     <span>Grand Total</span>
-                    <span>{symbol} {targetInvoice.total.toLocaleString()}</span>
+                    <span>{formatCurrency(targetInvoice.total)}</span>
                   </div>
                   <div className="flex justify-between text-emerald-600 font-bold">
                     <span>Paid Amount</span>
-                    <span>{symbol} {targetInvoice.paidAmount.toLocaleString()}</span>
+                    <span>{formatCurrency(targetInvoice.paidAmount)}</span>
                   </div>
                   {targetInvoice.dueAmount > 0 && (
                     <div className="flex justify-between text-rose-600 font-black text-sm pt-1">
                       <span>Remaining Due</span>
-                      <span>{symbol} {targetInvoice.dueAmount.toLocaleString()}</span>
+                      <span>{formatCurrency(targetInvoice.dueAmount)}</span>
                     </div>
                   )}
                 </div>

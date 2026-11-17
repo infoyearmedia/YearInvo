@@ -53,12 +53,14 @@ export const QuickSaleView: React.FC<QuickSaleViewProps> = ({ onOpenHistory }) =
     setActiveTab,
     language,
     t,
+    formatCurrency,
+    displayCurrencySymbol,
   } = useApp();
 
   const plan = user?.subscriptionPlan || 'Free';
   const isPremiumPlan = plan === 'Premium' || plan === 'Business' || plan === 'Lifetime';
 
-  const symbol = settings.currency || '৳';
+  const symbol = displayCurrencySymbol;
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isScannerOpen, setIsScannerOpen] = useState(false);
@@ -180,7 +182,7 @@ export const QuickSaleView: React.FC<QuickSaleViewProps> = ({ onOpenHistory }) =
         tax: 0,
         paymentMethod: paymentMethod === 'Due/Credit' ? 'Due/Credit' : paymentMethod,
         cashReceived: numericPaid,
-      });
+      }, { skipPosGate: true }); // Quick Sale is free for all plans — no POS gate
 
       console.log('[QUICK SALE] opening success modal', { invoiceNo: sale.invoiceNo, total: sale.total });
       setCompletedSale(sale);
@@ -422,7 +424,7 @@ export const QuickSaleView: React.FC<QuickSaleViewProps> = ({ onOpenHistory }) =
                     {/* 3. Price & Available Stock Info */}
                     <div className="mt-2 pt-2 border-t border-slate-200/70 dark:border-slate-700/70 flex items-center justify-between w-full">
                       <span className="font-black text-xs sm:text-sm text-[#ff5c01]">
-                        {symbol} {(prod.sellingPrice || 0).toLocaleString()}
+                        {formatCurrency((prod.sellingPrice || 0))}
                       </span>
                       <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">
                         {t('stock')}: {prod.currentStock} {prod.unit || ''}
@@ -561,9 +563,9 @@ export const QuickSaleView: React.FC<QuickSaleViewProps> = ({ onOpenHistory }) =
                             {item.product.name}
                           </h5>
                           <p className="text-[10px] text-slate-400">
-                            {symbol}{item.product.sellingPrice} × {item.quantity} ={' '}
+                            {formatCurrency(item.product.sellingPrice)} × {item.quantity} ={' '}
                             <strong className="text-slate-700 dark:text-slate-200">
-                              {symbol}{((item.product.sellingPrice || 0) * item.quantity).toLocaleString()}
+                              {formatCurrency(((item.product.sellingPrice || 0) * item.quantity))}
                             </strong>
                           </p>
                         </div>
@@ -657,7 +659,7 @@ export const QuickSaleView: React.FC<QuickSaleViewProps> = ({ onOpenHistory }) =
 
                 {calculatedDiscount > 0 && (
                   <div className="flex justify-end text-[11px] font-black text-emerald-600 dark:text-emerald-400">
-                    - {symbol}{(calculatedDiscount || 0).toLocaleString()}
+                    - {formatCurrency((calculatedDiscount || 0))}
                   </div>
                 )}
               </div>
@@ -695,7 +697,7 @@ export const QuickSaleView: React.FC<QuickSaleViewProps> = ({ onOpenHistory }) =
                         : 'text-emerald-600 dark:text-emerald-400'
                     }`}
                   >
-                    {symbol}{(remainingDue || 0).toLocaleString()}
+                    {formatCurrency((remainingDue || 0))}
                   </span>
                 </div>
 
@@ -773,7 +775,7 @@ export const QuickSaleView: React.FC<QuickSaleViewProps> = ({ onOpenHistory }) =
                     {t('totalAmount') || 'TOTAL AMOUNT'}
                   </span>
                   <span className="text-xl font-black text-[#ff5c01]">
-                    {symbol}{(grandTotal || 0).toLocaleString()}
+                    {formatCurrency((grandTotal || 0))}
                   </span>
                 </div>
                 
@@ -782,7 +784,7 @@ export const QuickSaleView: React.FC<QuickSaleViewProps> = ({ onOpenHistory }) =
                     <div className="text-right">
                       <span className="text-[10px] text-slate-400 block">{t('discount') || 'Discount'}</span>
                       <span className="text-xs font-bold text-emerald-400">
-                        - {symbol}{(calculatedDiscount || 0).toLocaleString()}
+                        - {formatCurrency((calculatedDiscount || 0))}
                       </span>
                     </div>
                   )}
@@ -831,29 +833,19 @@ export const QuickSaleView: React.FC<QuickSaleViewProps> = ({ onOpenHistory }) =
               </button>
             </div>
 
-            {settings.paymentSettings?.qrEnabled && (settings.paymentSettings?.qrImageUrl || settings.paymentSettings?.qrProvider) ? (
+            {settings.paymentSettings?.qrEnabled && settings.paymentSettings?.qrImageUrl ? (
               <>
                 <div className="bg-white p-4 rounded-2xl inline-block shadow-inner mx-auto">
-                  {settings.paymentSettings?.qrImageUrl ? (
-                    <img
-                      src={settings.paymentSettings.qrImageUrl}
-                      alt="Store QR Payment"
-                      className="w-48 h-48 object-contain mx-auto"
-                    />
-                  ) : (
-                    <img
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
-                        `${settings.paymentSettings?.qrProvider || 'PAYMENT'}-${settings.brandName || 'STORE'}-${grandTotal}`
-                      )}`}
-                      alt="Generated QR Payment"
-                      className="w-44 h-44 mx-auto"
-                    />
-                  )}
+                  <img
+                    src={settings.paymentSettings.qrImageUrl}
+                    alt="Store QR Payment"
+                    className="w-48 h-48 object-contain mx-auto"
+                  />
                 </div>
 
                 <div className="space-y-1 text-xs">
                   <p className="font-bold text-white">
-                    Scan to pay: <span className="text-[#ff5c01] text-base font-black">{symbol}{(grandTotal || 0).toLocaleString()}</span>
+                    Scan to pay: <span className="text-[#ff5c01] text-base font-black">{formatCurrency((grandTotal || 0))}</span>
                   </p>
                   <p className="text-xs text-slate-300 font-semibold">
                     Provider: <span className="text-[#ff5c01]">{settings.paymentSettings?.qrProvider || 'bKash'}</span>

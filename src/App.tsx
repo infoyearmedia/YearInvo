@@ -40,15 +40,14 @@ import { CapitalInvestmentView } from './components/capital/CapitalInvestmentVie
 import { OnlineBusinessModule } from './components/online/OnlineBusinessModule';
 import { PersonalLedgerModule } from './components/personalLedger/PersonalLedgerModule';
 import { BusinessTypeSetupModal } from './components/common/BusinessTypeSetupModal';
-import { EmailVerificationPrompt } from './components/auth/EmailVerificationPrompt';
 import { AcceptInvitationView } from './components/team/AcceptInvitationView';
 import { PremiumFeatureGuard } from './components/common/PremiumFeatureGuard';
-import { ShoppingCart, BookOpen, QrCode, ShieldCheck, Banknote, Sparkles, Award, Activity } from 'lucide-react';
+import { ShoppingCart, BookOpen, QrCode, ShieldCheck, ShieldAlert, Banknote, Sparkles, Award, Activity } from 'lucide-react';
 
 import { getDisplayBrandName } from './utils/brand';
 
 const MainLayout: React.FC = () => {
-  const { user, isEmailVerified, activeTab, setActiveTab, theme, settings, isDemoMode, exitDemoMode } = useApp();
+  const { user, activeTab, setActiveTab, theme, settings, isDemoMode, exitDemoMode, accountBlocked, clearAccountBlocked } = useApp();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showFirstTimeBizModal, setShowFirstTimeBizModal] = useState(() => {
     if (!user) return false;
@@ -93,15 +92,44 @@ const MainLayout: React.FC = () => {
     );
   }
 
+  // Suspended/blocked account: show a notice instead of the app or login.
+  // Set by syncSupabaseProfile/login when public.users.status is
+  // 'suspended' or 'blocked'. Never set for the super-admin or demo user.
+  if (accountBlocked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0b0f19] text-slate-200 p-6">
+        <div className="max-w-md w-full text-center bg-slate-900 border border-slate-800 rounded-2xl p-8">
+          <ShieldAlert className="w-12 h-12 mx-auto text-red-400" />
+          <h1 className="mt-4 text-xl font-black text-white">
+            {accountBlocked.status === 'blocked' ? 'Account Blocked' : 'Account Suspended'}
+          </h1>
+          <p className="mt-2 text-sm text-slate-400">
+            {accountBlocked.status === 'blocked'
+              ? 'This account has been blocked by the platform administrator.'
+              : 'This account has been suspended by the platform administrator.'}
+          </p>
+          <p className="mt-1 text-sm text-slate-500">{accountBlocked.email}</p>
+          <p className="mt-3 text-xs text-slate-500">
+            Please contact the platform owner at yearinvo@gmail.com to restore access.
+          </p>
+          <button
+            onClick={clearAccountBlocked}
+            className="mt-6 px-5 py-2.5 rounded-xl bg-slate-100 text-slate-900 text-sm font-bold hover:bg-white transition-colors cursor-pointer"
+          >
+            Back to Sign In
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) {
     return <LoginView />;
   }
 
-  // Enforce Email Verification: Show EmailVerificationPrompt screen until email is verified
-  const isAdminUser = user.email?.trim().toLowerCase() === 'yearinvo@gmail.com';
-  if (!isAdminUser && !isEmailVerified && !user.verifiedEmail) {
-    return <EmailVerificationPrompt />;
-  }
+  // Email verification gate removed (audit b.3): the old /api/auth/* Resend
+  // verification flow never ran live, and Supabase "Confirm email" is OFF,
+  // so new signups never need a verification screen. Users pass through.
 
   const renderActiveView = () => {
     switch (activeTab) {
@@ -330,18 +358,10 @@ const MainLayout: React.FC = () => {
           </PremiumFeatureGuard>
         );
       case 'ai':
-        return (
-          <PremiumFeatureGuard
-            featureKey="isAiInsightsAllowed"
-            featureNameEn="AI Business Assistant & Intelligence"
-            featureNameBn="এআই বিজনেস অ্যাসিস্ট্যান্ট"
-            descriptionEn="AI business forecasts, demand prediction, expense optimization, and profit-growth suggestions."
-            descriptionBn="এআই ভিত্তিক ভবিষ্যৎ সেলস প্রেডিকশন, খরচ নিয়ন্ত্রণ ও লাভ বাড়ানোর পরামর্শ।"
-            icon={Sparkles}
-          >
-            <AiInsightsView />
-          </PremiumFeatureGuard>
-        );
+        // Ungated (audit b.5): AI Insights is a "Coming soon" page, not a
+        // working Premium feature — it is no longer presented as a Premium
+        // benefit behind a paywall.
+        return <AiInsightsView />;
       case 'settings':
         return <SettingsView />;
       case 'branding':

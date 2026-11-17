@@ -155,7 +155,7 @@ const subTranslations: Record<string, SubDict> = {
     yearly: '1 Year',
     fiveYear: '5 Years',
     discountBadge: 'Save 15%',
-    sixMonthsDiscount: 'Save 15%',
+    sixMonthsDiscount: 'Save up to 15%',
     fiveYearDiscount: 'Save 25%',
     freePlanTitle: 'Free Trial',
     freePlanSub: '1 Month Free Trial',
@@ -247,7 +247,7 @@ const subTranslations: Record<string, SubDict> = {
     yearly: '১ বছর',
     fiveYear: '৫ বছর',
     discountBadge: '১৫% ছাড়',
-    sixMonthsDiscount: '১৫% সাশ্রয়',
+    sixMonthsDiscount: '১৫% পর্যন্ত সাশ্রয়',
     fiveYearDiscount: '২৫% ছাড়',
     freePlanTitle: 'ফ্রি ট্রায়াল',
     freePlanSub: '১ মাসের ফ্রি ট্রায়াল',
@@ -339,7 +339,7 @@ const subTranslations: Record<string, SubDict> = {
     yearly: 'سنة واحدة',
     fiveYear: '5 سنوات',
     discountBadge: 'وفر 15%',
-    sixMonthsDiscount: 'وفر 15%',
+    sixMonthsDiscount: 'وفّر حتى 15%',
     fiveYearDiscount: 'وفر 25%',
     freePlanTitle: 'تجربة مجانية',
     freePlanSub: 'تجربة مجانية لمدة شهر',
@@ -431,7 +431,7 @@ const subTranslations: Record<string, SubDict> = {
     yearly: '1 वर्ष',
     fiveYear: '5 वर्ष',
     discountBadge: '15% छूट',
-    sixMonthsDiscount: '15% छूट',
+    sixMonthsDiscount: '15% तक की छूट',
     fiveYearDiscount: '25% छूट',
     freePlanTitle: 'फ्री ट्रायल',
     freePlanSub: '1 महीने का फ्री ट्रायल',
@@ -578,6 +578,7 @@ export const SubscriptionView: React.FC = () => {
   // Calculate prices using the single source of truth with live exchange rates
   const proPricing = calculatePlanPricing('Pro', billingCycle, isBDT, displayCurrency, exchangeRates, language);
   const premiumPricing = calculatePlanPricing('Premium', billingCycle, isBDT, displayCurrency, exchangeRates, language);
+  const freePricing = calculatePlanPricing('Free', billingCycle, isBDT, displayCurrency, exchangeRates, language);
 
   // Active Region Providers & Selection Helpers
   const rawEnabledProviders = getEnabledProviders(activeRegion);
@@ -660,7 +661,7 @@ export const SubscriptionView: React.FC = () => {
     if (!paddleCheckoutEnabled) {
       setSubmitError(
         paddleNotice ||
-        "Checkouts aren't enabled for this Paddle account yet because account onboarding and compliance verification are pending in your Paddle Dashboard. You can submit your payment transaction reference or invoice below for manual activation."
+        "Card checkout is not available yet — no Paddle price IDs are configured. Please pay manually (bKash / Nagad / Rocket / bank) and submit your payment transaction reference below for manual activation."
       );
       setIntlManualMode(true);
       setIsSubmitting(false);
@@ -887,7 +888,7 @@ export const SubscriptionView: React.FC = () => {
 
             <div className="my-5">
               <div className="text-3xl font-black text-slate-900 dark:text-slate-100">
-                {isBDT ? '৳০' : '$0'}
+                {freePricing.totalFormatted}
               </div>
               <p className="text-xs font-bold text-slate-400 dark:text-slate-500 mt-0.5">
                 {langDict.freeLifetime}
@@ -1014,7 +1015,7 @@ export const SubscriptionView: React.FC = () => {
               </div>
               <p className="text-[11px] font-bold text-slate-600 dark:text-slate-400 mt-0.5">
                 {billingCycle === 'monthly'
-                  ? (isBDT ? '৳১০০ ১ম মাস / ৳১৫০ রিনিউ' : 'Special Intro Offer')
+                  ? (<>{proPricing.effectiveMonthlyFormatted}/mo • {isBn ? 'প্রতি মাসে একই দাম' : 'same price every month'}</>)
                   : `${proPricing.effectiveMonthlyFormatted}/mo • ${proPricing.discountPercent}% OFF`}
               </p>
             </div>
@@ -1170,7 +1171,7 @@ export const SubscriptionView: React.FC = () => {
               </div>
               <p className="text-[11px] font-bold text-[#ff5c01] mt-0.5">
                 {billingCycle === 'monthly'
-                  ? (isBDT ? '৳২৫০ / মাস • সম্পূর্ণ আনলিমিটেড' : 'Full POS & Team Access')
+                  ? (<>{premiumPricing.effectiveMonthlyFormatted}/mo • {isBn ? 'সম্পূর্ণ আনলিমিটেড' : 'Full POS & Team Access'}</>)
                   : `${premiumPricing.effectiveMonthlyFormatted}/mo • ${premiumPricing.discountPercent}% OFF`}
               </p>
             </div>
@@ -1340,12 +1341,12 @@ export const SubscriptionView: React.FC = () => {
               <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-bold uppercase">
                 <tr>
                   <th className="p-3.5 min-w-[200px]">System Features</th>
-                  <th className="p-3.5 text-center min-w-[100px]">Free (15-Day Trial)</th>
+                  <th className="p-3.5 text-center min-w-[100px]">Free (30-Day Trial)</th>
                   <th className="p-3.5 text-center min-w-[120px] text-[#ff5c01]">
-                    Pro ({isBDT ? (language === 'bn' ? '৳১০০/মাস' : '৳100/mo') : (normCurrency === 'USD' ? '$1.50/mo' : `${proPricing.effectiveMonthlyFormatted}/mo`)})
+                    Pro ({proPricing.effectiveMonthlyFormatted}/mo)
                   </th>
                   <th className="p-3.5 text-center min-w-[120px] text-[#ff5c01]">
-                    Premium ({isBDT ? (language === 'bn' ? '৳২৫০/মাস' : '৳250/mo') : (normCurrency === 'USD' ? '$3.50/mo' : `${premiumPricing.effectiveMonthlyFormatted}/mo`)})
+                    Premium ({premiumPricing.effectiveMonthlyFormatted}/mo)
                   </th>
                 </tr>
               </thead>
@@ -1790,7 +1791,7 @@ export const SubscriptionView: React.FC = () => {
                     <div className="space-y-1">
                       <div className="flex items-center justify-between">
                         <p className="font-semibold text-amber-200">
-                          Paddle Automated Checkout Awaiting Account Onboarding
+                          Card Checkout Not Available Yet
                         </p>
                         <button
                           type="button"
@@ -1802,7 +1803,7 @@ export const SubscriptionView: React.FC = () => {
                         </button>
                       </div>
                       <p className="text-[11px] text-amber-300/80 leading-relaxed">
-                        Checkouts aren't enabled for this Paddle account yet because account onboarding and compliance verification are pending in your Paddle Dashboard. You can enter your payment reference, transaction ID, or invoice receipt number below for immediate manual activation.
+                        Card checkout is not available yet because no Paddle price IDs are configured for this plan. Please pay manually (bKash / Nagad / Rocket / bank) and enter your payment reference, transaction ID, or invoice receipt number below for manual activation.
                       </p>
                     </div>
                   </div>

@@ -59,6 +59,124 @@ export async function getSupabaseUserByEmail(email: string): Promise<any | null>
   }
 }
 
+// All registered users, for the Owner Dashboard directory.
+// Uses the anon client (same permissive RLS as every other table);
+// never uses the service_role key in frontend code.
+export async function getSupabaseAllUsers(): Promise<UserProfile[]> {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.warn('[Supabase DB] Error getting all users:', error.message);
+      return [];
+    }
+
+    return (data || []).map((row: any) => {
+      const email = (row.email || '').toLowerCase();
+      const isPlatformSuperAdmin =
+        email === 'yearinvo@gmail.com' ||
+        (row.role || '').toString().toLowerCase() === 'platformowner';
+      const roleRaw = (row.role || 'owner').toString().toLowerCase();
+      const normalizedRole: UserProfile['role'] = isPlatformSuperAdmin || roleRaw === 'owner'
+        ? 'Owner'
+        : roleRaw === 'staff'
+        ? 'Staff'
+        : roleRaw === 'accountant'
+        ? 'Accountant'
+        : roleRaw === 'cashier'
+        ? 'Cashier'
+        : 'Manager';
+      const planRaw = (row.plan || 'free').toString().toLowerCase();
+      const assignedPlan: UserProfile['subscriptionPlan'] = isPlatformSuperAdmin
+        ? 'Lifetime'
+        : planRaw === 'lifetime'
+        ? 'Lifetime'
+        : planRaw === 'premium'
+        ? 'Premium'
+        : planRaw === 'pro'
+        ? 'Pro'
+        : 'Free';
+      const expiry = row.subscription_expires_at || undefined;
+
+      return {
+        id: row.id,
+        brandName: row.brand_name || 'My Store',
+        ownerName: row.full_name || 'Store Owner',
+        fullName: row.full_name || 'Store Owner',
+        name: row.full_name || 'Store Owner',
+        mobile: row.phone || '',
+        email: row.email || '',
+        businessType: row.business_type || 'General Retail & Grocery',
+        country: 'Bangladesh',
+        currency: row.currency || '৳',
+        timeZone: 'Asia/Dhaka',
+        role: normalizedRole,
+        subscriptionPlan: assignedPlan,
+        subscriptionStatus: row.subscription_status || 'active',
+        status: row.status || 'active',
+        startDate: row.created_at || undefined,
+        expiryDate: expiry,
+        subscriptionExpiresAt: expiry,
+        billingPeriod: (row.billing_duration || 'monthly') as any,
+        storeAddress: '',
+        verifiedEmail: true,
+        verifiedPhone: true,
+        createdAt: row.created_at
+          ? new Date(row.created_at).toISOString().split('T')[0]
+          : new Date().toISOString().split('T')[0],
+        notes: '',
+      } as UserProfile;
+    });
+  } catch (e) {
+    console.warn('[Supabase DB] Exception getting all users:', e);
+    return [];
+  }
+}
+
+// Owner action: set a user's account status in public.users
+// ('active' | 'suspended' | 'blocked'). Returns false on failure.
+export async function updateSupabaseUserStatus(
+  userId: string,
+  status: 'active' | 'suspended' | 'blocked'
+): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('users')
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', userId);
+    if (error) {
+      console.warn('[Supabase DB] Error updating user status:', error.message);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.warn('[Supabase DB] Exception updating user status:', e);
+    return false;
+  }
+}
+
+// Owner action: delete the public.users row. NOTE: this does NOT delete
+// the Supabase Auth user — that requires the service_role key and can
+// only be done from a secure backend. A deleted row means the account
+// can no longer sign in via syncSupabaseProfile (no profile row), but
+// the auth identity itself still exists until removed server-side.
+export async function deleteSupabaseUserRow(userId: string): Promise<boolean> {
+  try {
+    const { error } = await supabase.from('users').delete().eq('id', userId);
+    if (error) {
+      console.warn('[Supabase DB] Error deleting user row:', error.message);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.warn('[Supabase DB] Exception deleting user row:', e);
+    return false;
+  }
+}
+
 export async function upsertSupabaseUser(
   user: Partial<UserProfile> & { id: string; email: string }
 ): Promise<boolean> {
@@ -691,6 +809,9 @@ export async function createSupabaseSubscriptionRequest(
       id: req.id || undefined,
       user_id: req.userId || '',
       email: req.userEmail || '',
+      user_name: req.userName || '',
+      brand_name: req.brandName || '',
+      current_plan: req.currentPlan || 'Free',
       requested_plan: req.requestedPlan || 'Pro',
       billing_cycle: req.billingCycle || 'monthly',
       payment_method: req.paymentMethod || 'Manual',
@@ -725,13 +846,17 @@ export async function createSupabaseSubscriptionRequest(
 export async function updateSupabaseSubscriptionRequestStatus(
   requestId: string,
   status: 'pending' | 'approved' | 'rejected' | 'cancelled',
-  meta?: { approvedBy?: string; notes?: string }
+  meta?: { approvedBy?: string; notes?: string; startDate?: string; expiryDate?: string }
 ): Promise<boolean> {
   try {
     const payload: any = {
       status,
       updated_at: new Date().toISOString(),
     };
+    if (meta?.approvedBy) payload.approved_by = meta.approvedBy;
+    if (meta?.notes !== undefined) payload.notes = meta.notes;
+    if (meta?.startDate) payload.start_date = meta.startDate;
+    if (meta?.expiryDate) payload.expiry_date = meta.expiryDate;
 
     const { error } = await supabase
       .from('subscription_requests')
@@ -762,6 +887,13 @@ export async function updateSupabaseUserPlan(
       subscription_status: subscriptionStatus,
       updated_at: new Date().toISOString(),
     };
+    // Persist the expiry computed from the billing cycle. Free/Lifetime
+    // plans have no expiry, so clear any previously stored value.
+    if (expiryDate) {
+      payload.subscription_expires_at = expiryDate;
+    } else if (plan.toLowerCase() === 'free' || plan.toLowerCase() === 'lifetime') {
+      payload.subscription_expires_at = null;
+    }
 
     if (userId) {
       await supabase

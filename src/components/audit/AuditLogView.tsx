@@ -24,14 +24,34 @@ export const AuditLogView: React.FC = () => {
     saveAuditLogs: contextSaveAuditLogs,
   } = useApp();
 
-  // Connected to real-time cloud Firestore synchronized state
+  // Timestamp (ms) of the last explicit Clear Log. Activity-log entries at or
+  // before this time stay cleared: without it the view falls back to
+  // activityLogs whenever the audit store is empty and cleared rows reappear.
+  // Persisted so a clear survives a reload. New activity after the clear
+  // (timestamp newer than clearedAt) still shows.
+  const [clearedAt, setClearedAt] = useState<number | null>(() => {
+    try {
+      const stored = localStorage.getItem(`biz_audit_logs_cleared_${user?.id || 'default'}`);
+      return stored ? Number(stored) : null;
+    } catch (e) {
+      return null;
+    }
+  });
+
+  // Synced with Supabase cloud state
   const auditLogs = (contextAuditLogs && contextAuditLogs.length > 0)
     ? contextAuditLogs
-    : (activityLogs || []).map((log, idx) => ({
+    : (activityLogs || [])
+      .filter((log) => {
+        if (clearedAt === null) return true;
+        const t = new Date(log.timestamp).getTime();
+        return Number.isFinite(t) && t > clearedAt;
+      })
+      .map((log, idx) => ({
         id: `audit-${idx}-${Date.now()}`,
         userId: user?.id || 'owner',
         userName: user?.ownerName || user?.fullName || 'Store Owner',
-        userEmail: user?.email || 'owner@yearinvo.com',
+        userEmail: user?.email || '',
         userRole: 'Owner',
         action: log.action,
         actionBn: log.actionBn,
@@ -93,6 +113,11 @@ export const AuditLogView: React.FC = () => {
   const handleClearLogs = () => {
     if (confirm('Are you sure you want to clear all audit activity records?')) {
       saveAuditLogs([]);
+      const now = Date.now();
+      setClearedAt(now);
+      try {
+        localStorage.setItem(`biz_audit_logs_cleared_${user?.id || 'default'}`, String(now));
+      } catch (e) {}
     }
   };
 
@@ -151,9 +176,9 @@ export const AuditLogView: React.FC = () => {
             </p>
           </div>
           <div className="bg-slate-850/60 border border-slate-800 rounded-xl p-3">
-            <p className="text-[11px] font-semibold text-purple-400">Team & Security</p>
+            <p className="text-[11px] font-semibold text-purple-400">Settings & Security</p>
             <p className="text-xl font-bold text-purple-400 mt-0.5">
-              {auditLogs.filter((l) => l.category === 'team' || l.category === 'settings').length}
+              {auditLogs.filter((l) => l.category === 'settings').length}
             </p>
           </div>
           <div className="bg-slate-850/60 border border-slate-800 rounded-xl p-3">
@@ -186,7 +211,6 @@ export const AuditLogView: React.FC = () => {
           >
             <option value="all">All Event Categories</option>
             <option value="payroll">Payroll & Salaries</option>
-            <option value="team">Team & Access</option>
             <option value="inventory">Inventory & Products</option>
             <option value="sales">Sales & POS</option>
             <option value="expense">Expenses</option>

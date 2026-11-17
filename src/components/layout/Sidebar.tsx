@@ -73,8 +73,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     user?.email?.toLowerCase().trim() === 'yearinvo@gmail.com' ||
     user?.role === 'PlatformOwner';
 
-  // Feature locking based on exact 3 plans (10 features require Premium)
-  const isPremiumUnlocked = plan === 'Premium' || plan === 'Lifetime' || isPlatformSuperAdmin;
+  // Feature locking based on exact 3 plans (11 features require Premium).
+  // Legacy 'Business' plan is the old Premium name (getPlanLimits maps it to
+  // Premium, and PremiumFeatureGuard also accepts it), so it unlocks here too.
+  const isPremiumUnlocked = plan === 'Premium' || plan === 'Lifetime' || plan === 'Business' || isPlatformSuperAdmin;
   const isPosLocked = !isPremiumUnlocked;
   const isPersonalLedgerLocked = !isPremiumUnlocked;
   const isBarcodeLocked = !isPremiumUnlocked;
@@ -84,6 +86,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const isAiLocked = !isPremiumUnlocked;
   const isLoyaltyLocked = !isPremiumUnlocked;
   const isAuditLogLocked = !isPremiumUnlocked;
+  // No sidebar item currently maps to these two flags (both are enforced by
+  // PremiumFeatureGuard where the features render); defined here so the
+  // sidebar's lock set covers all 11 Premium-only flags.
+  const isAdvancedPermissionsLocked = !isPremiumUnlocked;
+  const isMultiBranchLocked = !isPremiumUnlocked;
 
   // Team Management & Payroll Grouped Children
   const teamChildren = [

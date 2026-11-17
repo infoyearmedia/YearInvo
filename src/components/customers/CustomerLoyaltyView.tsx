@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { CustomerLoyaltySettings, Customer } from '../../types';
 import {
@@ -23,14 +23,13 @@ export const CustomerLoyaltyView: React.FC = () => {
     customers,
     updateCustomer,
     formatMoney,
-    formatCurrency,
     displayCurrency,
     user,
     loyaltySettings: contextLoyaltySettings,
     saveLoyaltySettings: contextSaveLoyaltySettings,
   } = useApp();
 
-  // Connected to real-time cloud Firestore synchronized state
+  // Synced with Supabase cloud state
   const loyaltySettings: CustomerLoyaltySettings = contextLoyaltySettings || {
     enabled: true,
     pointsPerAmount: 1, // 1 point
@@ -62,6 +61,17 @@ export const CustomerLoyaltyView: React.FC = () => {
   const [formUnitAmount, setFormUnitAmount] = useState(loyaltySettings.spendingAmountUnit);
   const [formRedeemValue, setFormRedeemValue] = useState(loyaltySettings.pointRedemptionValue);
   const [formMinRedeem, setFormMinRedeem] = useState(loyaltySettings.minPointsToRedeem);
+
+  // Sync the form when settings arrive after mount (e.g. loaded from cloud),
+  // otherwise the form keeps snapshotting the stale defaults above.
+  useEffect(() => {
+    if (!contextLoyaltySettings) return;
+    setFormEnabled(contextLoyaltySettings.enabled);
+    setFormPointsPerUnit(contextLoyaltySettings.pointsPerAmount);
+    setFormUnitAmount(contextLoyaltySettings.spendingAmountUnit);
+    setFormRedeemValue(contextLoyaltySettings.pointRedemptionValue);
+    setFormMinRedeem(contextLoyaltySettings.minPointsToRedeem);
+  }, [contextLoyaltySettings]);
 
   const handleSaveSettings = (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,6 +108,8 @@ export const CustomerLoyaltyView: React.FC = () => {
       loyaltyPoints: newPoints,
       lifetimePointsEarned: lifetimeEarned,
       lifetimePointsRedeemed: lifetimeRedeemed,
+      lastLoyaltyAdjustmentReason: adjustReason.trim() || undefined,
+      lastLoyaltyAdjustmentAt: new Date().toISOString(),
     });
 
     setIsAdjustPointsModalOpen(false);
@@ -137,7 +149,7 @@ export const CustomerLoyaltyView: React.FC = () => {
               <span>Customer Loyalty & Rewards Program</span>
             </h1>
             <p className="text-xs text-slate-400 mt-1 max-w-xl">
-              Reward repeat shoppers with points on every invoice. Customers can redeem points for discounts during POS checkout.
+              Manually award or deduct loyalty points for repeat shoppers. Points are tracked here for reference only — there is no automatic checkout redemption.
             </p>
           </div>
 
@@ -230,7 +242,6 @@ export const CustomerLoyaltyView: React.FC = () => {
               {filteredCustomers.map((c) => {
                 const points = c.loyaltyPoints || 0;
                 const discountValue = points * loyaltySettings.pointRedemptionValue;
-                const canRedeem = points >= loyaltySettings.minPointsToRedeem;
 
                 return (
                   <tr key={c.id} className="hover:bg-slate-800/40 transition-colors">
@@ -247,15 +258,6 @@ export const CustomerLoyaltyView: React.FC = () => {
                     </td>
                     <td className="py-3.5 px-4 font-bold text-emerald-400">
                       {formatMoney(discountValue)}
-                      {canRedeem ? (
-                        <span className="block text-[10px] text-emerald-500 font-normal">
-                          ✓ Eligible for checkout discount
-                        </span>
-                      ) : (
-                        <span className="block text-[10px] text-slate-500 font-normal">
-                          Min. {loyaltySettings.minPointsToRedeem} pts required
-                        </span>
-                      )}
                     </td>
                     <td className="py-3.5 px-4 text-slate-300">
                       {c.lifetimePointsEarned || points} pts
@@ -315,7 +317,7 @@ export const CustomerLoyaltyView: React.FC = () => {
                 <div>
                   <p className="text-xs font-bold text-white">Enable Customer Loyalty Program</p>
                   <p className="text-[11px] text-slate-400">
-                    Automatically award points on POS receipts and enable discount redemption.
+                    Points are adjusted manually from the customer table. No points are awarded automatically on receipts and there is no checkout redemption.
                   </p>
                 </div>
               </label>
@@ -380,7 +382,7 @@ export const CustomerLoyaltyView: React.FC = () => {
               </div>
 
               <div className="p-3 bg-purple-950/20 border border-purple-900/40 rounded-xl text-xs text-purple-300">
-                Summary: Customer spends {formatMoney(formUnitAmount)} → Earns {formPointsPerUnit} points. At checkout, {formMinRedeem} points gives a discount of {formatMoney(formMinRedeem * formRedeemValue)}.
+                Summary: {formPointsPerUnit} points are worth {formatMoney(formPointsPerUnit * formRedeemValue)} at the configured point value. Points are adjusted manually — they are not earned automatically on sales or redeemed at checkout.
               </div>
 
               <div className="flex justify-end gap-2 pt-2">

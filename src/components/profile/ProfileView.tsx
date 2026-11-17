@@ -196,7 +196,7 @@ export const ProfileView: React.FC = () => {
                 </span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                {user?.email || 'owner@yearinvo.com'}
+                {user?.email || ''}
               </p>
               {user?.brandName && (
                 <p className="text-[11px] font-bold text-[#ff5c01] uppercase tracking-wide">
@@ -289,7 +289,7 @@ export const ProfileView: React.FC = () => {
           <div>
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
               <Mail className="w-3.5 h-3.5 text-slate-400" />
-              <span>{t('emailAddress') || 'Account Email'} (Firebase ID)</span>
+              <span>{t('emailAddress') || 'Account Email'} (Supabase ID)</span>
             </label>
             <input
               type="email"
@@ -298,7 +298,7 @@ export const ProfileView: React.FC = () => {
               className="w-full px-4 py-2.5 text-xs font-semibold bg-slate-100 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-500 cursor-not-allowed"
             />
             <p className="text-[10px] text-slate-400 mt-1">
-              Authentication email is linked to your Firebase security credentials.
+              Authentication email is linked to your Supabase security credentials.
             </p>
           </div>
 

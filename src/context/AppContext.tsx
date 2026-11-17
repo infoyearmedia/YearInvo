@@ -10,6 +10,9 @@ import {
   updateSupabaseUserPlan,
   getSupabaseUser,
   getSupabaseUserByEmail,
+  getSupabaseAllUsers,
+  updateSupabaseUserStatus,
+  deleteSupabaseUserRow,
   upsertSupabaseUser,
 } from '../services/supabaseDbService';
 import {
@@ -149,6 +152,8 @@ export const calculateSubscriptionExpiry = (startDate: Date | string, billingPer
     expiry.setFullYear(expiry.getFullYear() + 5);
   } else if (billingPeriod === 'yearly') {
     expiry.setFullYear(expiry.getFullYear() + 1);
+  } else if (billingPeriod === 'six_months' || billingPeriod === 'six_month') {
+    expiry.setMonth(expiry.getMonth() + 6);
   } else {
     // monthly
     expiry.setMonth(expiry.getMonth() + 1);
@@ -165,10 +170,6 @@ interface AppContextType {
   loginWithGoogle: () => Promise<{ success: boolean; message?: string }>;
   sendLoginCode: (email: string) => Promise<{ success: boolean; message?: string }>;
   verifyLoginCode: (email: string, token: string) => Promise<{ success: boolean; message?: string }>;
-  sendVerificationOtp: (email?: string, name?: string) => Promise<{ success: boolean; message: string; cooldownRemaining?: number }>;
-  verifyEmailOtp: (code: string, email?: string) => Promise<{ success: boolean; message?: string }>;
-  resendEmailVerification: () => Promise<{ success: boolean; message: string; cooldownRemaining?: number }>;
-  checkEmailVerification: () => Promise<boolean>;
   logout: () => Promise<void>;
   // Demo Mode (guest preview with sample data, no account, no cloud writes)
   isDemoMode: boolean;
@@ -181,8 +182,13 @@ interface AppContextType {
 
   // Platform Owner & User Management
   allUsers: UserProfile[];
+  // Set when a suspended/blocked account tries to sign in; App.tsx
+  // renders a blocked notice instead of the app while this is set.
+  // Never set for the super-admin or the demo user.
+  accountBlocked: { email: string; status: 'suspended' | 'blocked' } | null;
+  clearAccountBlocked: () => void;
   updateUserRole: (userId: string, newRole: UserRole) => void;
-  sendFirebasePasswordReset: (email: string) => Promise<{ success: boolean; message?: string }>;
+  sendSupabasePasswordReset: (email: string) => Promise<{ success: boolean; message?: string }>;
   suspendUser: (userId: string) => void;
   activateUser: (userId: string) => void;
   blockUser: (userId: string) => void;
@@ -293,6 +299,11 @@ interface AppContextType {
     paymentMethod: 'Cash' | 'Card' | 'bKash/Mobile' | 'Due/Credit' | 'Split';
     cashReceived: number;
     note?: string;
+  }, options?: {
+    // Quick Sale is free for all plans: pass { skipPosGate: true } so the
+    // Premium POS gate does not block Quick Sale checkout. POS Register
+    // (PosSystem) never passes this, so it stays Premium-only.
+    skipPosGate?: boolean;
   }) => Promise<Sale>;
 
   // Categories & Brands CRUD
@@ -330,6 +341,8 @@ interface AppContextType {
 
   // Expenses & Purchases
   addExpense: (exp: Omit<Expense, 'id'>) => Promise<Expense>;
+  updateExpense: (id: string, exp: Partial<Expense>) => Promise<void>;
+  deleteExpense: (id: string) => Promise<void>;
   addPurchase: (purchase: Omit<Purchase, 'id' | 'purchaseNo'>) => Promise<Purchase>;
 
   // Capital & Investment
@@ -670,6 +683,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Track Auth emailVerified status
   const [isEmailVerified, setIsEmailVerified] = useState<boolean>(true);
 
+  // Blocked-account notice: set when a suspended/blocked user signs in.
+  const [accountBlocked, setAccountBlocked] = useState<{ email: string; status: 'suspended' | 'blocked' } | null>(null);
+  const clearAccountBlocked = () => setAccountBlocked(null);
+
   useEffect(() => {
     // Never persist the demo guest user: a reload must end the demo
     // instead of restoring it as if it were a real signed-in account.
@@ -732,7 +749,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ? 'Owner'
           : 'Manager';
 
-      if (uData?.status === 'suspended' && !isAdmin) {
+      // Suspended/blocked accounts cannot use the app. Never blocks the
+      // super-admin (yearinvo@gmail.com) or the demo user, which never
+      // reaches this sync with a Supabase row anyway.
+      const accountStatus = (uData?.status || '').toString().toLowerCase();
+      if (
+        (accountStatus === 'suspended' || accountStatus === 'blocked') &&
+        !isAdmin &&
+        sbUser.id !== 'usr-demo-merchant-01'
+      ) {
+        setAccountBlocked({ email: userEmail, status: accountStatus as 'suspended' | 'blocked' });
         await supabase.auth.signOut();
         setUser(null);
         return;
@@ -781,7 +807,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const subStatus = (uData?.subscription_status || uData?.subscriptionStatus || 'active') as any;
       const subPending = uData?.pendingPlan || undefined;
       const subStartDate = uData?.startDate || uData?.created_at || undefined;
-      const subExpiryDate = uData?.expiryDate || undefined;
+      const subExpiryDate = uData?.subscription_expires_at || uData?.expiryDate || uData?.currentPeriodEnd || undefined;
       const subBillingPeriod = (uData?.billing_duration || uData?.billingPeriod || 'monthly') as BillingCycle;
 
       const fullName =
@@ -813,6 +839,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         pendingPlan: subPending,
         startDate: subStartDate,
         expiryDate: subExpiryDate,
+        subscriptionExpiresAt: subExpiryDate,
         billingPeriod: subBillingPeriod,
         status: uData?.status || 'active',
         storeAddress: uData?.storeAddress || uData?.address || '',
@@ -846,6 +873,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }).catch((err) => console.warn('[Supabase Sync User Notice]:', err));
       }
 
+      setAccountBlocked(null);
       setUser(profile);
 
       if (userPreferredLang && SUPPORTED_LANGUAGES.some((l) => l.code === userPreferredLang)) {
@@ -916,91 +944,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Registered Users Directory (Realtime Firestore Collection)
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
 
+  // Registered Users Directory (Supabase public.users, realtime + polling).
+  // Previously Firestore-only, so real Supabase signups never appeared
+  // here and the Owner Dashboard showed 0 users.
   useEffect(() => {
-    const usersCol = collection(db, 'users');
-    const unsubscribeUsers = onSnapshot(
-      usersCol,
-      (snapshot) => {
-        const list: UserProfile[] = [];
-        snapshot.forEach((docSnap) => {
-          const uData = docSnap.data();
-          const uEmail = (uData.email || '').toLowerCase();
-          const isPlatformSuperAdmin = isTeamStockAdmin(uEmail) || uData.role === 'PlatformOwner' || uData.role === 'platformowner';
-          
-          let normalizedRole: UserRole = 'Manager';
-          if (uData.role === 'Owner' || uData.role === 'owner' || isPlatformSuperAdmin) {
-            normalizedRole = 'Owner';
-          } else if (uData.role === 'Staff' || uData.role === 'staff') {
-            normalizedRole = 'Staff';
-          } else if (uData.role === 'Accountant' || uData.role === 'accountant') {
-            normalizedRole = 'Accountant';
-          } else if (uData.role === 'Cashier' || uData.role === 'cashier') {
-            normalizedRole = 'Cashier';
-          } else {
-            normalizedRole = 'Manager';
-          }
+    let isMounted = true;
 
-          const assignedPlan: SubscriptionPlan = isPlatformSuperAdmin ? 'Lifetime' : ((uData.subscriptionPlan || uData.subscription || 'Free') as SubscriptionPlan);
-
-          let createdDateStr = new Date().toISOString().split('T')[0];
-          if (uData.createdAt) {
-            if (typeof uData.createdAt === 'string') {
-              createdDateStr = uData.createdAt.split('T')[0];
-            } else if (uData.createdAt?.toDate) {
-              createdDateStr = uData.createdAt.toDate().toISOString().split('T')[0];
-            }
-          }
-
-          let lastLoginStr = '';
-          if (uData.lastLogin) {
-            if (typeof uData.lastLogin === 'string') {
-              lastLoginStr = uData.lastLogin;
-            } else if (uData.lastLogin?.toDate) {
-              lastLoginStr = uData.lastLogin.toDate().toLocaleString();
-            }
-          }
-
-          const subPending = uData.pendingPlan || undefined;
-          const subStartDate = uData.startDate || uData.currentPeriodStart || undefined;
-          const subExpiryDate = uData.expiryDate || uData.currentPeriodEnd || undefined;
-          const subBillingPeriod = (uData.billingPeriod || uData.billingCycle || 'monthly') as BillingCycle;
-
-          list.push({
-            id: docSnap.id || uData.uid || uData.id,
-            brandName: uData.brandName || uData.storeName || 'My Store',
-            ownerName: uData.ownerName || uData.fullName || 'Store Owner',
-            fullName: uData.fullName || uData.ownerName || 'Store Owner',
-            name: uData.name || uData.fullName || uData.ownerName || '',
-            mobile: uData.mobile || uData.phone || '',
-            email: uData.email || '',
-            businessType: uData.businessType || uData.storeType || 'General Retail & Grocery',
-            country: uData.country || 'Bangladesh',
-            currency: uData.currency || '৳',
-            timeZone: uData.timeZone || 'Asia/Dhaka',
-            role: normalizedRole,
-            subscriptionPlan: assignedPlan,
-            subscriptionStatus: uData.subscriptionStatus || 'active',
-            pendingPlan: subPending,
-            startDate: subStartDate,
-            expiryDate: subExpiryDate,
-            billingPeriod: subBillingPeriod,
-            transactionId: uData.transactionId || undefined,
-            paymentMethod: uData.paymentMethod || uData.paymentProvider || undefined,
-            paymentProvider: uData.paymentProvider || undefined,
-            paymentRegion: uData.paymentRegion || undefined,
-            status: (uData.status as any) || 'active',
-            storeAddress: uData.storeAddress || uData.address || '',
-            affiliateCode: uData.affiliateCode || '',
-            affiliateProgram: uData.affiliateProgram || '',
-            avatarUrl: uData.avatarUrl || uData.photoUrl || uData.photo || '',
-            verifiedEmail: true,
-            verifiedPhone: true,
-            createdAt: createdDateStr,
-            lastLogin: lastLoginStr,
-            notes: uData.notes || '',
-            dashboardPreferences: uData.dashboardPreferences ? { ...defaultDashboardPreferences, ...uData.dashboardPreferences } : defaultDashboardPreferences,
-          });
-        });
+    const loadSupabaseUsers = async () => {
+      try {
+        const list = await getSupabaseAllUsers();
+        if (!isMounted) return;
         setAllUsers(list);
 
         if (auth.currentUser) {
@@ -1032,13 +985,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             });
           }
         }
-      },
-      (error) => {
-        console.warn('Firestore onSnapshot users notice:', error);
+      } catch (err) {
+        console.warn('Notice loading users from Supabase:', err);
       }
-    );
+    };
 
-    return () => unsubscribeUsers();
+    loadSupabaseUsers();
+    const pollInterval = setInterval(loadSupabaseUsers, 15000);
+    const channel = supabase
+      .channel('users_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'users' },
+        () => {
+          loadSupabaseUsers();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      isMounted = false;
+      clearInterval(pollInterval);
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   // Update Offline Sync Queue Service with current user ID & network lifecycle
@@ -2380,12 +2349,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const roleRaw = uData?.role || meta.role || 'Owner';
       const normalizedRole: UserRole = (isAdmin || !roleRaw || roleRaw.toString().toLowerCase() === 'owner' || roleRaw.toString().toLowerCase() === 'admin' || roleRaw.toString().toLowerCase() === 'platformowner') ? 'Owner' : 'Manager';
 
-      if (uData?.status === 'suspended' && !isAdmin) {
+      const loginAccountStatus = (uData?.status || '').toString().toLowerCase();
+      if (
+        (loginAccountStatus === 'suspended' || loginAccountStatus === 'blocked') &&
+        !isAdmin &&
+        sbUser.id !== 'usr-demo-merchant-01'
+      ) {
+        setAccountBlocked({ email: cleanEmail, status: loginAccountStatus as 'suspended' | 'blocked' });
         await supabase.auth.signOut();
         setUser(null);
         return {
           success: false,
-          message: 'Your account has been suspended by the platform administrator.',
+          message:
+            loginAccountStatus === 'blocked'
+              ? 'Your account has been blocked by the platform administrator.'
+              : 'Your account has been suspended by the platform administrator.',
         };
       }
 
@@ -2433,6 +2411,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         currency: foundUser.currency,
       });
 
+      setAccountBlocked(null);
       setUser(foundUser);
       setIsEmailVerified(true);
       if (foundUser.brandName) {
@@ -2643,160 +2622,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // Send / Resend 6-Digit Email Verification OTP via Resend API
-  const sendVerificationOtp = async (
-    targetEmail?: string,
-    targetName?: string
-  ): Promise<{ success: boolean; message: string; cooldownRemaining?: number }> => {
-    const cleanEmail = (targetEmail || user?.email || auth.currentUser?.email || '').trim().toLowerCase();
-    const displayName = targetName || user?.fullName || user?.ownerName || auth.currentUser?.displayName || 'Store Owner';
-    const uid = user?.id || auth.currentUser?.uid || '';
-
-    if (!cleanEmail) {
-      return {
-        success: false,
-        message: 'No email address available to send verification code.',
-      };
-    }
-
-    try {
-      const res = await fetch('/api/auth/send-verification-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: cleanEmail, name: displayName, uid }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        return {
-          success: false,
-          message: data.error || 'Failed to send verification code. Please try again.',
-          cooldownRemaining: data.cooldownRemaining,
-        };
-      }
-
-      return {
-        success: true,
-        message: data.message || `A 6-digit verification code has been sent to ${cleanEmail}.`,
-      };
-    } catch (err: any) {
-      console.error('Error calling /api/auth/send-verification-otp:', err);
-      return {
-        success: false,
-        message: err.message || 'Failed to reach verification server. Please check your network connection.',
-      };
-    }
-  };
-
-  // Verify 6-digit OTP code against server
-  const verifyEmailOtp = async (
-    code: string,
-    targetEmail?: string
-  ): Promise<{ success: boolean; message?: string }> => {
-    const cleanEmail = (targetEmail || user?.email || auth.currentUser?.email || '').trim().toLowerCase();
-    const uid = user?.id || auth.currentUser?.uid || '';
-
-    if (!cleanEmail || !code) {
-      return {
-        success: false,
-        message: 'Email and 6-digit verification code are required.',
-      };
-    }
-
-    try {
-      const res = await fetch('/api/auth/verify-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: cleanEmail, code, uid }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        return {
-          success: false,
-          message: data.error || 'Verification failed. Please try again.',
-        };
-      }
-
-      // Mark verified in client state
-      setIsEmailVerified(true);
-      setUser((prev) => (prev ? { ...prev, verifiedEmail: true } : prev));
-      try {
-        if (user?.id) {
-          const saved = localStorage.getItem('biz_user');
-          if (saved) {
-            const parsed = JSON.parse(saved);
-            parsed.verifiedEmail = true;
-            localStorage.setItem('biz_user', JSON.stringify(parsed));
-          }
-        }
-      } catch (e) {}
-
-      return {
-        success: true,
-        message: data.message || 'Email successfully verified!',
-      };
-    } catch (err: any) {
-      console.error('Error calling /api/auth/verify-otp:', err);
-      return {
-        success: false,
-        message: err.message || 'Network error while verifying code. Please try again.',
-      };
-    }
-  };
-
-  // Resend Email Verification method (reusable wrapper)
-  const resendEmailVerification = async (): Promise<{ success: boolean; message: string; cooldownRemaining?: number }> => {
-    return sendVerificationOtp();
-  };
-
-  // Check Email Verification Status method
-  const checkEmailVerification = async (): Promise<boolean> => {
-    const cleanEmail = (user?.email || auth.currentUser?.email || '').trim().toLowerCase();
-    const uid = user?.id || auth.currentUser?.uid || '';
-    if (!cleanEmail && !uid) return false;
-
-    const isAdmin = isTeamStockAdmin(cleanEmail);
-    if (isAdmin) {
-      setIsEmailVerified(true);
-      setUser((prev) => (prev ? { ...prev, verifiedEmail: true } : prev));
-      return true;
-    }
-
-    // 1. Check server verification status
-    try {
-      const res = await fetch('/api/auth/check-verification-status', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: cleanEmail, uid }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.isVerified) {
-          setIsEmailVerified(true);
-          setUser((prev) => (prev ? { ...prev, verifiedEmail: true } : prev));
-          return true;
-        }
-      }
-    } catch (e) {
-      // ignore
-    }
-
-    // 2. Also check Firebase client user reload
-    const currentUser = auth.currentUser;
-    if (currentUser) {
-      try {
-        await currentUser.reload();
-        if (currentUser.emailVerified) {
-          setIsEmailVerified(true);
-          setUser((prev) => (prev ? { ...prev, verifiedEmail: true } : prev));
-          return true;
-        }
-      } catch (e) {}
-    }
-
-    return isEmailVerified || Boolean(user?.verifiedEmail);
-  };
+  // Email-verification OTP removed (audit b.3): the /api/auth/* Resend flow
+  // never ran live (static Vercel build) and Supabase "Confirm email" is OFF,
+  // so no verification screen or OTP is needed. The working Supabase login
+  // OTP (sendLoginCode / verifyLoginCode) is untouched.
 
   const logout = async (): Promise<void> => {
     try {
@@ -2867,7 +2696,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     logActivity('Updated User Role', 'ব্যবহারকারীর রোল পরিবর্তন করা হয়েছে', `${userId} -> ${newRole}`);
   };
 
-  const sendFirebasePasswordReset = async (emailInput: string): Promise<{ success: boolean; message?: string }> => {
+  const sendSupabasePasswordReset = async (emailInput: string): Promise<{ success: boolean; message?: string }> => {
     const cleanEmail = emailInput.trim().toLowerCase();
     if (!cleanEmail) {
       return { success: false, message: 'অনুগ্রহ করে একটি সঠিক ইমেইল এড্রেস প্রদান করুন।' };
@@ -2878,92 +2707,103 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         redirectTo: redirectOrigin,
       });
       if (sbError) {
-        console.warn('[Supabase Auth] Password reset notice:', sbError.message);
+        console.warn('[Supabase Auth] Password reset failed:', sbError.message);
+        return {
+          success: false,
+          message: `পাসওয়ার্ড রিসেট ইমেইল পাঠানো যায়নি: ${sbError.message}`,
+        };
       }
       return {
         success: true,
         message: `পাসওয়ার্ড রিসেট লিংক (${cleanEmail}) ইমেইলে পাঠানো হয়েছে। আপনার ইনবক্স চেক করুন।`,
       };
     } catch (error: any) {
-      console.warn('Password reset notification:', error);
+      console.warn('Password reset failed:', error);
       return {
-        success: true,
-        message: `পাসওয়ার্ড রিসেট রিকোয়েস্ট প্রক্রিয়া করা হয়েছে (${cleanEmail})। আপনার ইমেইল চেক করুন।`,
+        success: false,
+        message: 'পাসওয়ার্ড রিসেট ইমেইল পাঠানো যায়নি। আবার চেষ্টা করুন।',
       };
     }
   };
 
-  const suspendUser = (userId: string) => {
+  const suspendUser = async (userId: string) => {
+    const ok = await updateSupabaseUserStatus(userId, 'suspended');
+    if (!ok) {
+      console.warn('[Supabase DB] suspendUser failed for', userId);
+      return;
+    }
     setAllUsers((prev) =>
       prev.map((u) => (u.id === userId ? { ...u, status: 'suspended' } : u))
     );
     if (user && user.id === userId) {
+      setAccountBlocked({ email: user.email, status: 'suspended' });
+      supabase.auth.signOut().catch(() => {});
       setUser(null);
-    }
-    try {
-      const userRef = doc(db, 'users', userId);
-      updateDoc(userRef, { status: 'suspended' });
-    } catch (e) {
-      console.warn('Firestore suspendUser notice:', e);
     }
     logActivity('Suspended User Account', 'ব্যবহারকারী স্থগিত করা হয়েছে', userId);
   };
 
-  const activateUser = (userId: string) => {
+  const activateUser = async (userId: string) => {
+    const ok = await updateSupabaseUserStatus(userId, 'active');
+    if (!ok) {
+      console.warn('[Supabase DB] activateUser failed for', userId);
+      return;
+    }
     setAllUsers((prev) =>
       prev.map((u) => (u.id === userId ? { ...u, status: 'active' } : u))
     );
-    try {
-      const userRef = doc(db, 'users', userId);
-      updateDoc(userRef, { status: 'active' });
-    } catch (e) {
-      console.warn('Firestore activateUser notice:', e);
+    if (user && user.id === userId) {
+      setAccountBlocked(null);
     }
     logActivity('Activated User Account', 'ব্যবহারকারী সক্রিয় করা হয়েছে', userId);
   };
 
-  const blockUser = (userId: string) => {
+  const blockUser = async (userId: string) => {
+    const ok = await updateSupabaseUserStatus(userId, 'blocked');
+    if (!ok) {
+      console.warn('[Supabase DB] blockUser failed for', userId);
+      return;
+    }
     setAllUsers((prev) =>
       prev.map((u) => (u.id === userId ? { ...u, status: 'blocked' } : u))
     );
     if (user && user.id === userId) {
+      setAccountBlocked({ email: user.email, status: 'blocked' });
       supabase.auth.signOut().catch(() => {});
       setUser(null);
-    }
-    try {
-      const userRef = doc(db, 'users', userId);
-      updateDoc(userRef, { status: 'blocked' });
-    } catch (e) {
-      console.warn('Firestore blockUser notice:', e);
     }
     logActivity('Blocked User Account', 'ব্যবহারকারীর অ্যাকাউন্ট ব্লক করা হয়েছে', userId);
   };
 
-  const unblockUser = (userId: string) => {
+  const unblockUser = async (userId: string) => {
+    const ok = await updateSupabaseUserStatus(userId, 'active');
+    if (!ok) {
+      console.warn('[Supabase DB] unblockUser failed for', userId);
+      return;
+    }
     setAllUsers((prev) =>
       prev.map((u) => (u.id === userId ? { ...u, status: 'active' } : u))
     );
-    try {
-      const userRef = doc(db, 'users', userId);
-      updateDoc(userRef, { status: 'active' });
-    } catch (e) {
-      console.warn('Firestore unblockUser notice:', e);
+    if (user && user.id === userId) {
+      setAccountBlocked(null);
     }
     logActivity('Unblocked User Account', 'অ্যাকাউন্ট আনব্লক করা হয়েছে', userId);
   };
 
-  const deleteUser = (userId: string) => {
-    setAllUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, status: 'deleted' } : u)));
+  const deleteUser = async (userId: string) => {
+    const ok = await deleteSupabaseUserRow(userId);
+    if (!ok) {
+      console.warn('[Supabase DB] deleteUser failed for', userId);
+      return;
+    }
+    setAllUsers((prev) => prev.filter((u) => u.id !== userId));
     if (user && user.id === userId) {
       supabase.auth.signOut().catch(() => {});
       setUser(null);
     }
-    try {
-      const userRef = doc(db, 'users', userId);
-      updateDoc(userRef, { status: 'deleted' });
-    } catch (e) {
-      console.warn('Firestore deleteUser notice:', e);
-    }
+    // NOTE: only the public.users row is deleted. The Supabase Auth
+    // identity cannot be deleted from the frontend (needs service_role);
+    // with no profile row the account can no longer use the app.
     logActivity('Deleted User Account', 'অ্যাকোউন্ট ডিঅ্যাক্টিভেট/মুছে ফেলা হয়েছে', userId);
   };
 
@@ -3008,68 +2848,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const refreshUsers = async (): Promise<void> => {
     try {
-      const usersCol = collection(db, 'users');
-      const snapshot = await getDocs(usersCol);
-      const list: UserProfile[] = [];
-      snapshot.forEach((docSnap) => {
-        const uData = docSnap.data();
-        const uEmail = (uData.email || '').toLowerCase();
-        const isPlatformSuperAdmin = isTeamStockAdmin(uEmail) || uData.role === 'PlatformOwner' || uData.role === 'platformowner';
-        let normalizedRole: UserRole = 'Manager';
-        if (uData.role === 'Owner' || uData.role === 'owner' || isPlatformSuperAdmin) {
-          normalizedRole = 'Owner';
-        } else if (uData.role === 'Staff' || uData.role === 'staff') {
-          normalizedRole = 'Staff';
-        } else if (uData.role === 'Accountant' || uData.role === 'accountant') {
-          normalizedRole = 'Accountant';
-        } else if (uData.role === 'Cashier' || uData.role === 'cashier') {
-          normalizedRole = 'Cashier';
-        } else {
-          normalizedRole = 'Manager';
-        }
-        const assignedPlan: SubscriptionPlan = isPlatformSuperAdmin ? 'Lifetime' : ((uData.subscriptionPlan || uData.subscription || 'Free') as SubscriptionPlan);
-
-        list.push({
-          id: docSnap.id || uData.uid || uData.id,
-          brandName: uData.brandName || uData.storeName || 'My Store',
-          ownerName: uData.ownerName || uData.fullName || 'Store Owner',
-          mobile: uData.mobile || uData.phone || '',
-          email: uData.email || '',
-          businessType: uData.businessType || uData.storeType || 'General Retail & Grocery',
-          country: uData.country || 'Bangladesh',
-          currency: uData.currency || '৳',
-          timeZone: uData.timeZone || 'Asia/Dhaka',
-          role: normalizedRole,
-          subscriptionPlan: assignedPlan,
-          subscriptionStatus: uData.subscriptionStatus || 'active',
-          status: (uData.status as any) || 'active',
-          storeAddress: uData.storeAddress || uData.address || '',
-          affiliateCode: uData.affiliateCode || '',
-          affiliateProgram: uData.affiliateProgram || '',
-          avatarUrl: uData.avatarUrl || uData.photoUrl || uData.photo || '',
-          verifiedEmail: true,
-          verifiedPhone: true,
-          createdAt: uData.createdAt ? (typeof uData.createdAt === 'string' ? uData.createdAt : (uData.createdAt?.toDate ? uData.createdAt.toDate().toISOString().split('T')[0] : new Date().toISOString().split('T')[0])) : new Date().toISOString().split('T')[0],
-          lastLogin: uData.lastLogin ? (typeof uData.lastLogin === 'string' ? uData.lastLogin : (uData.lastLogin?.toDate ? uData.lastLogin.toDate().toLocaleString() : '')) : '',
-          notes: uData.notes || '',
-          dashboardPreferences: uData.dashboardPreferences ? { ...defaultDashboardPreferences, ...uData.dashboardPreferences } : defaultDashboardPreferences,
-        });
-      });
+      const list = await getSupabaseAllUsers();
       setAllUsers(list);
     } catch (e) {
       console.warn('refreshUsers error:', e);
     }
   };
 
-  const resetUserPassword = (userId: string, newPass: string) => {
-    setAllUsers((prev) =>
-      prev.map((u) => (u.id === userId ? { ...u, password: newPass } : u))
-    );
-    try {
-      const userRef = doc(db, 'users', userId);
-      updateDoc(userRef, { password: newPass });
-    } catch (e) {
-      console.warn('Firestore resetUserPassword notice:', e);
+  const resetUserPassword = (userId: string, _newPass: string) => {
+    // The frontend cannot set an arbitrary password for another user.
+    // Send a Supabase password-reset email to the account instead; the
+    // typed new password is intentionally never stored anywhere.
+    // (Previously this wrote the plaintext password to Firestore.)
+    const target = allUsers.find((u) => u.id === userId);
+    const targetEmail = (target?.email || '').trim().toLowerCase();
+    if (targetEmail) {
+      const redirectOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://yearmedia.xyz';
+      supabase.auth
+        .resetPasswordForEmail(targetEmail, { redirectTo: redirectOrigin })
+        .then(
+          ({ error }) => {
+            if (error) console.warn('[Supabase Auth] Owner password reset notice:', error.message);
+          },
+          (err) => console.warn('[Supabase Auth] Owner password reset notice:', err)
+        );
+    } else {
+      console.warn('[Supabase Auth] Owner password reset: no email found for user', userId);
     }
     logActivity('Reset User Password', 'পাসওয়ার্ড পরিবর্তন করা হয়েছে', userId);
   };
@@ -3366,6 +3170,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         id: generatedId,
         userId: targetUid,
         userEmail: userEmail,
+        userName: user.ownerName || user.fullName || 'Merchant',
+        brandName: user.brandName || user.storeName || 'My Store',
+        currentPlan: user.subscriptionPlan || 'Free',
         requestedPlan: data.requestedPlan || 'Pro',
         billingCycle: data.billingCycle || 'monthly',
         paymentMethod: data.paymentMethod || 'Manual',
@@ -3478,7 +3285,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!req) return;
 
     const nowIso = new Date().toISOString();
-    const ownerIdentifier = user?.ownerName || user?.email || 'Owner';
+    const ownerIdentifier = user?.email || user?.ownerName || 'Owner';
     const billingPeriod = req.billingCycle || req.billingPeriod || 'monthly';
     const startDate = nowIso;
     const expiryDate = req.requestedPlan === 'Lifetime' || req.requestedPlan === 'Free' ? undefined : calculateSubscriptionExpiry(startDate, billingPeriod);
@@ -3496,8 +3303,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       console.log('[Supabase DB] Approving request:', requestId, req.userEmail || req.userId);
 
-      // 1. Update status in Supabase subscription_requests
-      await updateSupabaseSubscriptionRequestStatus(requestId, 'approved', { approvedBy: ownerIdentifier });
+      // 1. Update status in Supabase subscription_requests (records the
+      // approver email, notes, and the approved start/expiry dates)
+      await updateSupabaseSubscriptionRequestStatus(requestId, 'approved', {
+        approvedBy: ownerIdentifier,
+        startDate,
+        ...(expiryDate ? { expiryDate } : {}),
+      });
 
       // 2. Update merchant user plan in Supabase users table (by both id and email)
       await updateSupabaseUserPlan(req.userId, req.requestedPlan, 'active', expiryDate, req.userEmail);
@@ -3766,7 +3578,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!req) return;
 
     try {
-      await updateSupabaseSubscriptionRequestStatus(requestId, 'rejected', { approvedBy: user?.ownerName || 'Owner', notes });
+      await updateSupabaseSubscriptionRequestStatus(requestId, 'rejected', { approvedBy: user?.email || user?.ownerName || 'Owner', notes });
       if (req.userId) {
         await supabase.from('users').update({
           subscription_status: 'active',
@@ -4228,11 +4040,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     paymentMethod: 'Cash' | 'Card' | 'bKash/Mobile' | 'Due/Credit' | 'Split';
     cashReceived: number;
     note?: string;
-  }): Promise<Sale> => {
-    // Subscription feature enforcement
+  }, options?: { skipPosGate?: boolean }): Promise<Sale> => {
+    // Subscription feature enforcement — skipped for Quick Sale, which is
+    // free for all plans (QuickSaleView passes skipPosGate). POS Register
+    // (PosSystem) never skips, so it stays Premium-only.
     const isOwner = isTeamStockAdmin(user?.email) || user?.role === 'PlatformOwner';
     const planLimits = getPlanLimits(user?.subscriptionPlan, user?.subscriptionStatus === 'expired');
-    if (!isOwner && !planLimits.isPosAllowed) {
+    if (!options?.skipPosGate && !isOwner && !planLimits.isPosAllowed) {
       const upgradeMsg = user?.subscriptionPlan === 'Pro'
         ? 'POS & Sell is a Premium feature. Please upgrade to Premium to use the POS register.'
         : 'POS & Sell is locked on Free Trial. Please upgrade to Pro or Premium to use POS.';
@@ -4381,7 +4195,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     clearCart();
-    logActivity('Completed POS Sale', 'নতুন বিক্রয় ইনভয়েস সম্পন্ন', `${invoiceNo} - Total: ৳${grandTotal}`);
+    logActivity('Completed POS Sale', 'নতুন বিক্রয় ইনভয়েস সম্পন্ন', `${invoiceNo} - Total: ${formatCurrency(grandTotal)}`);
 
     // Enqueue operation in robust Offline Sync Queue
     if (uid) {
@@ -4841,8 +4655,46 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (uid) localStorage.setItem(`biz_expenses_${uid}`, JSON.stringify(next));
     } catch (e) {}
 
-    logActivity('Added Expense', 'নতুন খরচ এন্ট্রি করা হয়েছে', `${expData.title} (৳${expData.amount})`);
+    logActivity('Added Expense', 'নতুন খরচ এন্ট্রি করা হয়েছে', `${expData.title} (${formatCurrency(expData.amount)})`);
     return newExp;
+  };
+
+  const updateExpense = async (id: string, expData: Partial<Expense>): Promise<void> => {
+    const next = expenses.map((e) => (e.id === id ? { ...e, ...expData } : e));
+    const uid = user?.id || auth.currentUser?.uid;
+    if (uid) {
+      await saveUserCloudCollection(uid, 'expenses', { items: next });
+    }
+
+    setExpenses(next);
+    try {
+      localStorage.setItem('biz_expenses', JSON.stringify(next));
+      if (uid) localStorage.setItem(`biz_expenses_${uid}`, JSON.stringify(next));
+    } catch (e) {}
+
+    const updated = next.find((e) => e.id === id);
+    if (updated) {
+      logActivity('Updated Expense', 'খরচ এন্ট্রি আপডেট করা হয়েছে', `${updated.title} (${formatCurrency(updated.amount)})`);
+    }
+  };
+
+  const deleteExpense = async (id: string): Promise<void> => {
+    const removed = expenses.find((e) => e.id === id);
+    const next = expenses.filter((e) => e.id !== id);
+    const uid = user?.id || auth.currentUser?.uid;
+    if (uid) {
+      await saveUserCloudCollection(uid, 'expenses', { items: next });
+    }
+
+    setExpenses(next);
+    try {
+      localStorage.setItem('biz_expenses', JSON.stringify(next));
+      if (uid) localStorage.setItem(`biz_expenses_${uid}`, JSON.stringify(next));
+    } catch (e) {}
+
+    if (removed) {
+      logActivity('Deleted Expense', 'খরচ এন্ট্রি মুছে ফেলা হয়েছে', `${removed.title} (${formatCurrency(removed.amount)})`);
+    }
   };
 
   const addPurchase = async (pData: Omit<Purchase, 'id' | 'purchaseNo'>): Promise<Purchase> => {
@@ -4961,7 +4813,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (uid) localStorage.setItem(`biz_customers_${uid}`, JSON.stringify(nextCustomers));
       } catch (e) {}
 
-      logActivity('Collected Customer Due', 'গ্রাহকের বকেয়া আদায় করা হয়েছে', `${target.name}: ৳${data.amountPaid}`);
+      logActivity('Collected Customer Due', 'গ্রাহকের বকেয়া আদায় করা হয়েছে', `${target.name}: ${formatCurrency(data.amountPaid)}`);
       return record;
     } else {
       const target = suppliers.find((s) => s.id === data.entityId);
@@ -5001,7 +4853,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (uid) localStorage.setItem(`biz_suppliers_${uid}`, JSON.stringify(nextSuppliers));
       } catch (e) {}
 
-      logActivity('Paid Supplier Due', 'সরবরাহকারীকে বকেয়া পরিশোধ', `${target.name}: ৳${data.amountPaid}`);
+      logActivity('Paid Supplier Due', 'সরবরাহকারীকে বকেয়া পরিশোধ', `${target.name}: ${formatCurrency(data.amountPaid)}`);
       return record;
     }
   };
@@ -5026,7 +4878,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (uid) localStorage.setItem(`biz_investments_${uid}`, JSON.stringify(next));
     } catch (e) {}
 
-    logActivity('Added Investment', 'নতুন বিনিয়োগ যোগ করা হয়েছে', `${invData.investorName}: ৳${invData.amount}`);
+    logActivity('Added Investment', 'নতুন বিনিয়োগ যোগ করা হয়েছে', `${invData.investorName}: ${formatCurrency(invData.amount)}`);
     return newInv;
   };
 
@@ -5085,7 +4937,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (uid) localStorage.setItem(`biz_capital_withdrawals_${uid}`, JSON.stringify(next));
     } catch (e) {}
 
-    logActivity('Withdrew Capital', 'মূলধন উত্তোলন রেকর্ড করা হয়েছে', `৳${wData.amount} - ${wData.reason}`);
+    logActivity('Withdrew Capital', 'মূলধন উত্তোলন রেকর্ড করা হয়েছে', `${formatCurrency(wData.amount)} - ${wData.reason}`);
     return newWithdrawal;
   };
 
@@ -6253,10 +6105,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         loginWithGoogle,
         sendLoginCode,
         verifyLoginCode,
-        sendVerificationOtp,
-        verifyEmailOtp,
-        resendEmailVerification,
-        checkEmailVerification,
         logout,
         isDemoMode,
         enterDemoMode,
@@ -6266,8 +6114,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         uploadProfilePhoto,
         removeProfilePhoto,
         allUsers,
+        accountBlocked,
+        clearAccountBlocked,
         updateUserRole,
-        sendFirebasePasswordReset,
+        sendSupabasePasswordReset,
         suspendUser,
         activateUser,
         blockUser,
@@ -6354,6 +6204,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         resetAllDataToZero,
         loadSampleDemoData,
         addExpense,
+        updateExpense,
+        deleteExpense,
         addPurchase,
         investments,
         capitalWithdrawals,

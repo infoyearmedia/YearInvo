@@ -24,7 +24,6 @@ import {
 
 export const ReportsView: React.FC = () => {
   const { metrics, sales, expenses, settings, language, t, formatCurrency } = useApp();
-  const symbol = settings.currency || '৳';
   const isBn = language === 'bn';
 
   const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly' | 'yearly' | 'all'>('monthly');
@@ -105,10 +104,10 @@ export const ReportsView: React.FC = () => {
     return acc;
   }, {});
 
-  const formatVal = (val: unknown) => {
-    const num = Number(val);
-    return isNaN(num) ? '0' : num.toLocaleString();
-  };
+  // Money values render through the shared formatter (base currency -> display
+  // currency, with conversion), so a USD store sees converted $ amounts and a
+  // BDT store sees ৳ amounts — never a ৳-prefixed unconverted number.
+  const formatVal = (val: unknown) => formatCurrency(val as number);
 
   const handleDownloadCSV = () => {
     const reportData = [
@@ -118,25 +117,25 @@ export const ReportsView: React.FC = () => {
       ['Report Date', new Date().toISOString().split('T')[0]],
       ['', ''],
       ['--- CORE PROFIT & LOSS METRICS ---', ''],
-      ['1. Total Sales (Revenue)', `${symbol} ${formatVal(totalSales)}`],
-      ['2. Cost of Goods Sold (COGS)', `${symbol} ${formatVal(costOfGoodsSold)}`],
-      ['3. Gross Profit (Sales - COGS)', `${symbol} ${formatVal(grossProfit)}`],
+      ['1. Total Sales (Revenue)', `${formatVal(totalSales)}`],
+      ['2. Cost of Goods Sold (COGS)', `${formatVal(costOfGoodsSold)}`],
+      ['3. Gross Profit (Sales - COGS)', `${formatVal(grossProfit)}`],
       ['Gross Profit Margin (%)', `${grossMarginPercent}%`],
-      ['4. Total Operating Expenses', `${symbol} ${formatVal(totalExpenses)}`],
+      ['4. Total Operating Expenses', `${formatVal(totalExpenses)}`],
       ['', ''],
       ['--- NET FINANCIAL OUTCOME ---', ''],
       ['Status', isLoss ? 'NET LOSS' : isProfit ? 'NET PROFIT' : 'BREAK-EVEN'],
-      ['5. Net Profit', `${symbol} ${formatVal(netProfit)}`],
-      ['6. Net Loss (Total Loss)', `${symbol} ${formatVal(netLoss)}`],
+      ['5. Net Profit', `${formatVal(netProfit)}`],
+      ['6. Net Loss (Total Loss)', `${formatVal(netLoss)}`],
       ['Net Margin (%)', `${netMarginPercent}%`],
       ['', ''],
       ['--- CUMULATIVE BALANCE & INVENTORY ---', ''],
-      ['New Due Created in Period', `${symbol} ${formatVal(periodNewDue)}`],
-      ['Total Customer Due Receivable (Cumulative)', `${symbol} ${formatVal(metrics?.totalDueCustomers)}`],
-      ['Total Supplier Due Payable (Cumulative)', `${symbol} ${formatVal(metrics?.totalDueSuppliers)}`],
-      ['Inventory Cost Valuation', `${symbol} ${formatVal(metrics?.totalInventoryCostValue)}`],
-      ['Inventory Retail Potential Value', `${symbol} ${formatVal(metrics?.totalInventorySellingValue)}`],
-      ['All-Time Cash Balance', `${symbol} ${formatVal(metrics?.totalBalance)}`],
+      ['New Due Created in Period', `${formatVal(periodNewDue)}`],
+      ['Total Customer Due Receivable (Cumulative)', `${formatVal(metrics?.totalDueCustomers)}`],
+      ['Total Supplier Due Payable (Cumulative)', `${formatVal(metrics?.totalDueSuppliers)}`],
+      ['Inventory Cost Valuation', `${formatVal(metrics?.totalInventoryCostValue)}`],
+      ['Inventory Retail Potential Value', `${formatVal(metrics?.totalInventorySellingValue)}`],
+      ['All-Time Cash Balance', `${formatVal(metrics?.totalBalance)}`],
     ];
 
     const csvContent = reportData.map((e) => e.map((cell) => `"${cell}"`).join(',')).join('\n');
@@ -239,8 +238,8 @@ export const ReportsView: React.FC = () => {
                 </div>
                 <p className="text-xs text-rose-600/90 dark:text-rose-400/90 mt-0.5">
                   {isBn
-                    ? `মোট খরচ (${symbol} ${formatVal(totalExpenses)}) মোট লাভের (${symbol} ${formatVal(grossProfit)}) চেয়ে বেশি হওয়ায় এই সময়ে ক্ষতি হয়েছে।`
-                    : `Total Expenses exceed Gross Profit by ${symbol} ${formatVal(netLoss)} in this period.`}
+                    ? `মোট খরচ (${formatVal(totalExpenses)}) মোট লাভের (${formatVal(grossProfit)}) চেয়ে বেশি হওয়ায় এই সময়ে ক্ষতি হয়েছে।`
+                    : `Total Expenses exceed Gross Profit by ${formatVal(netLoss)} in this period.`}
                 </p>
               </div>
             </div>
@@ -250,7 +249,7 @@ export const ReportsView: React.FC = () => {
                 🔴 {isBn ? 'মোট ক্ষতি (Total Loss)' : 'Total Loss'}
               </span>
               <span className="text-2xl sm:text-3xl font-black text-rose-600 dark:text-rose-400">
-                {symbol} {formatVal(netLoss)}
+                {formatVal(netLoss)}
               </span>
             </div>
           </div>
@@ -269,7 +268,7 @@ export const ReportsView: React.FC = () => {
                 </div>
                 <p className="text-xs text-emerald-700/90 dark:text-emerald-400/90 mt-0.5">
                   {isBn
-                    ? `মোট লাভ (${symbol} ${formatVal(grossProfit)}) থেকে সব খরচ বাদ দেওয়ার পর নিট মুনাফা অর্জিত হয়েছে।`
+                    ? `মোট লাভ (${formatVal(grossProfit)}) থেকে সব খরচ বাদ দেওয়ার পর নিট মুনাফা অর্জিত হয়েছে।`
                     : `Gross Profit covers all operating expenses with a positive net profit margin of ${netMarginPercent}%.`}
                 </p>
               </div>
@@ -280,7 +279,7 @@ export const ReportsView: React.FC = () => {
                 🟢 {isBn ? 'নিট লাভ (Net Profit)' : 'Net Profit'}
               </span>
               <span className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400">
-                {symbol} {formatVal(netProfit)}
+                {formatVal(netProfit)}
               </span>
             </div>
           </div>
@@ -297,7 +296,7 @@ export const ReportsView: React.FC = () => {
                 </p>
               </div>
             </div>
-            <span className="text-xl font-bold text-slate-700 dark:text-slate-300">{symbol} 0</span>
+            <span className="text-xl font-bold text-slate-700 dark:text-slate-300">{formatCurrency(0)}</span>
           </div>
         )}
 
@@ -321,7 +320,7 @@ export const ReportsView: React.FC = () => {
                 1. {isBn ? 'মোট বিক্রয় (Total Sales)' : 'Total Sales'}
               </span>
               <span className="text-lg sm:text-xl font-black text-blue-600 dark:text-blue-400 mt-1 block">
-                {symbol} {formatVal(totalSales)}
+                {formatVal(totalSales)}
               </span>
               <span className="text-[10px] text-slate-400 dark:text-slate-500 block mt-0.5">
                 {filteredSales.length} {isBn ? 'টি চালান' : 'invoices'}
@@ -334,7 +333,7 @@ export const ReportsView: React.FC = () => {
                 2. {isBn ? 'বিক্রিত পণ্যের খরচ (COGS)' : 'Cost of Goods Sold'}
               </span>
               <span className="text-lg sm:text-xl font-black text-slate-700 dark:text-slate-300 mt-1 block">
-                {symbol} {formatVal(costOfGoodsSold)}
+                {formatVal(costOfGoodsSold)}
               </span>
               <span className="text-[10px] text-slate-400 dark:text-slate-500 block mt-0.5">
                 {isBn ? 'পণ্যের মোট কেনা দাম' : 'Item buying cost'}
@@ -347,7 +346,7 @@ export const ReportsView: React.FC = () => {
                 3. {isBn ? 'মোট লাভ (Gross Profit)' : 'Gross Profit'}
               </span>
               <span className="text-lg sm:text-xl font-black text-indigo-600 dark:text-indigo-400 mt-1 block">
-                {symbol} {formatVal(grossProfit)}
+                {formatVal(grossProfit)}
               </span>
               <span className="text-[10px] text-indigo-600/70 dark:text-indigo-400/70 block mt-0.5 font-medium">
                 {grossMarginPercent}% {isBn ? 'মার্জিন' : 'margin'}
@@ -360,7 +359,7 @@ export const ReportsView: React.FC = () => {
                 4. {isBn ? 'মোট খরচ (Total Expenses)' : 'Total Expenses'}
               </span>
               <span className="text-lg sm:text-xl font-black text-amber-600 dark:text-amber-400 mt-1 block">
-                {symbol} {formatVal(totalExpenses)}
+                {formatVal(totalExpenses)}
               </span>
               <span className="text-[10px] text-slate-400 dark:text-slate-500 block mt-0.5">
                 {filteredExpenses.length} {isBn ? 'টি এন্ট্রি' : 'expense entries'}
@@ -379,7 +378,7 @@ export const ReportsView: React.FC = () => {
                 5. {isBn ? 'নিট লাভ (Net Profit)' : 'Net Profit'}
               </span>
               <span className="text-lg sm:text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1 block">
-                {symbol} {formatVal(netProfit)}
+                {formatVal(netProfit)}
               </span>
               <span className="text-[10px] text-emerald-700/80 dark:text-emerald-400/80 block mt-0.5">
                 {isProfit ? `${netMarginPercent}% ${isBn ? 'মুনাফা' : 'margin'}` : isBn ? 'লাভ হয়নি' : 'No profit'}
@@ -398,7 +397,7 @@ export const ReportsView: React.FC = () => {
                 6. {isBn ? 'নিট ক্ষতি (Net Loss)' : 'Net Loss'}
               </span>
               <span className="text-lg sm:text-xl font-black text-rose-600 dark:text-rose-400 mt-1 block">
-                {symbol} {formatVal(netLoss)}
+                {formatVal(netLoss)}
               </span>
               <span className="text-[10px] text-rose-700/80 dark:text-rose-400/80 block mt-0.5">
                 {isLoss ? (isBn ? '🔴 ক্ষতি হয়েছে' : '🔴 Net loss incurred') : isBn ? 'ক্ষতি হয়নি' : 'No loss'}
@@ -414,7 +413,7 @@ export const ReportsView: React.FC = () => {
               {isBn ? 'নতুন বকেয়া (এই পিরিয়ডে)' : 'Period New Due Created'}
             </span>
             <span className="text-sm sm:text-base font-bold text-amber-600 dark:text-amber-400 mt-0.5 block">
-              {symbol} {formatVal(periodNewDue)}
+              {formatVal(periodNewDue)}
             </span>
           </div>
 
@@ -423,7 +422,7 @@ export const ReportsView: React.FC = () => {
               {isBn ? 'কাস্টমার বকেয়া (পাওনা)' : 'Total Customer Receivable'}
             </span>
             <span className="text-sm sm:text-base font-bold text-rose-600 dark:text-rose-400 mt-0.5 block">
-              {symbol} {formatVal(metrics?.totalDueCustomers)}
+              {formatVal(metrics?.totalDueCustomers)}
             </span>
           </div>
 
@@ -432,7 +431,7 @@ export const ReportsView: React.FC = () => {
               {isBn ? 'সাপ্লায়ার বকেয়া (দেনা)' : 'Supplier Payable Due'}
             </span>
             <span className="text-sm sm:text-base font-bold text-orange-600 dark:text-orange-400 mt-0.5 block">
-              {symbol} {formatVal(metrics?.totalDueSuppliers)}
+              {formatVal(metrics?.totalDueSuppliers)}
             </span>
           </div>
 
@@ -441,7 +440,7 @@ export const ReportsView: React.FC = () => {
               {isBn ? 'মওজুদ স্টক খরচ মূল্য' : 'Inventory Cost Value'}
             </span>
             <span className="text-sm sm:text-base font-bold text-slate-700 dark:text-slate-300 mt-0.5 block">
-              {symbol} {formatVal(metrics?.totalInventoryCostValue)}
+              {formatVal(metrics?.totalInventoryCostValue)}
             </span>
           </div>
 
@@ -450,7 +449,7 @@ export const ReportsView: React.FC = () => {
               {isBn ? 'মোট ক্যাশ ব্যালেন্স' : 'Current Cash Balance'}
             </span>
             <span className="text-sm sm:text-base font-bold text-indigo-600 dark:text-indigo-400 mt-0.5 block">
-              {symbol} {formatVal(metrics?.totalBalance)}
+              {formatVal(metrics?.totalBalance)}
             </span>
           </div>
         </div>
@@ -512,7 +511,7 @@ export const ReportsView: React.FC = () => {
                       </td>
                       <td className="p-3 sm:p-4 text-center text-slate-400 font-mono">(+)</td>
                       <td className="p-3 sm:p-4 text-right font-black text-blue-600 dark:text-blue-400">
-                        {symbol} {formatVal(totalSales)}
+                        {formatVal(totalSales)}
                       </td>
                     </tr>
 
@@ -523,7 +522,7 @@ export const ReportsView: React.FC = () => {
                       </td>
                       <td className="p-3 sm:p-4 text-center text-slate-400 font-mono">(-)</td>
                       <td className="p-3 sm:p-4 text-right font-bold text-slate-600 dark:text-slate-400">
-                        {symbol} {formatVal(costOfGoodsSold)}
+                        {formatVal(costOfGoodsSold)}
                       </td>
                     </tr>
 
@@ -534,7 +533,7 @@ export const ReportsView: React.FC = () => {
                       </td>
                       <td className="p-3 sm:p-4 text-center text-indigo-600 font-mono">(=)</td>
                       <td className="p-3 sm:p-4 text-right font-black text-indigo-600 dark:text-indigo-400">
-                        {symbol} {formatVal(grossProfit)}
+                        {formatVal(grossProfit)}
                       </td>
                     </tr>
 
@@ -545,7 +544,7 @@ export const ReportsView: React.FC = () => {
                       </td>
                       <td className="p-3 sm:p-4 text-center text-slate-400 font-mono">(-)</td>
                       <td className="p-3 sm:p-4 text-right font-bold text-amber-600 dark:text-amber-400">
-                        {symbol} {formatVal(totalExpenses)}
+                        {formatVal(totalExpenses)}
                       </td>
                     </tr>
 
@@ -588,7 +587,7 @@ export const ReportsView: React.FC = () => {
                             : 'text-slate-700 dark:text-slate-300'
                         }`}
                       >
-                        {isLoss ? `${symbol} ${formatVal(netLoss)}` : `${symbol} ${formatVal(netProfit)}`}
+                        {isLoss ? `${formatVal(netLoss)}` : `${formatVal(netProfit)}`}
                       </td>
                     </tr>
                   </tbody>
@@ -609,7 +608,7 @@ export const ReportsView: React.FC = () => {
                       >
                         <span className="text-slate-500 dark:text-slate-400 block truncate">{cat}</span>
                         <span className="font-bold text-slate-800 dark:text-slate-200 block mt-0.5">
-                          {symbol} {formatVal(amt)}
+                          {formatVal(amt)}
                         </span>
                       </div>
                     ))}
@@ -656,10 +655,10 @@ export const ReportsView: React.FC = () => {
                             <td className="p-3 text-slate-700 dark:text-slate-300 font-medium">{s.customerName}</td>
                             <td className="p-3 text-slate-500">{s.items.length} items</td>
                             <td className="p-3 text-right font-bold text-blue-600 dark:text-blue-400">
-                              {symbol} {formatVal(s.total)}
+                              {formatVal(s.total)}
                             </td>
                             <td className="p-3 text-right text-slate-500">
-                              {symbol} {formatVal(saleBuyingCost)}
+                              {formatVal(saleBuyingCost)}
                             </td>
                             <td
                               className={`p-3 text-right font-black ${
@@ -668,7 +667,7 @@ export const ReportsView: React.FC = () => {
                                   : 'text-rose-600 dark:text-rose-400'
                               }`}
                             >
-                              {symbol} {formatVal(saleGrossMargin)}
+                              {formatVal(saleGrossMargin)}
                             </td>
                           </tr>
                         );
@@ -713,7 +712,7 @@ export const ReportsView: React.FC = () => {
                           <td className="p-3 text-slate-700 dark:text-slate-300">{e.title}</td>
                           <td className="p-3 text-slate-500">{e.paymentMethod}</td>
                           <td className="p-3 text-right font-black text-rose-600 dark:text-rose-400">
-                            {symbol} {formatVal(e.amount)}
+                            {formatVal(e.amount)}
                           </td>
                         </tr>
                       ))

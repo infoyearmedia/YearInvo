@@ -295,7 +295,7 @@ export const DeliverySettingsView: React.FC = () => {
                   {settings.currency}
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 mt-1">E.g., Dhaka/Chattogram City: ৳80</p>
+              <p className="text-[11px] text-slate-400 mt-1">E.g., Dhaka/Chattogram City: {formatCurrency(80)}</p>
             </div>
 
             <div>
@@ -322,7 +322,7 @@ export const DeliverySettingsView: React.FC = () => {
                   {settings.currency}
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 mt-1">E.g., Nationwide: ৳150</p>
+              <p className="text-[11px] text-slate-400 mt-1">E.g., Nationwide: {formatCurrency(150)}</p>
             </div>
 
             <div>

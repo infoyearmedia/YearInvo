@@ -18,8 +18,7 @@ import {
 } from 'lucide-react';
 
 export const ExpiredProductsView: React.FC = () => {
-  const { products, updateProduct, deleteProduct, adjustStock, settings, t, language } = useApp();
-  const symbol = settings.currency || '৳';
+  const { products, updateProduct, deleteProduct, adjustStock, settings, t, language, formatCurrency } = useApp();
   const isBn = language === 'bn';
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -32,11 +31,12 @@ export const ExpiredProductsView: React.FC = () => {
   // Determine current ISO date string (YYYY-MM-DD)
   const todayStr = new Date().toISOString().split('T')[0];
 
-  // Helper to check if a product is strictly expired
+  // Helper to check if a product is expired — a product expiring today is
+  // expired too, matching the POS/Quick Sale block (expiryDate <= today).
   const isProductExpired = (p: Product): boolean => {
     if (!p.expiryDate) return false;
     // Compare date string YYYY-MM-DD directly
-    return p.expiryDate < todayStr;
+    return p.expiryDate <= todayStr;
   };
 
   // Strictly filter products to ONLY show expired products
@@ -195,7 +195,7 @@ export const ExpiredProductsView: React.FC = () => {
               {isBn ? 'ক্রয়মূল্য ভিত্তিক ক্ষতি (Loss)' : 'Cost Value Lost'}
             </p>
             <h3 className="text-2xl font-black text-slate-900 dark:text-white mt-1">
-              {symbol}{totalCostLoss.toLocaleString()}
+              {formatCurrency(totalCostLoss)}
             </h3>
             <span className="text-[10px] text-rose-500 font-medium">
               {isBn ? 'কেনা দাম অনুযায়ী মোট ক্ষতি' : 'Based on buying price'}
@@ -213,7 +213,7 @@ export const ExpiredProductsView: React.FC = () => {
               {isBn ? 'বিক্রয়মূল্য ভিত্তিক মূল্য' : 'Retail Value Lost'}
             </p>
             <h3 className="text-2xl font-black text-slate-900 dark:text-white mt-1">
-              {symbol}{totalRetailLoss.toLocaleString()}
+              {formatCurrency(totalRetailLoss)}
             </h3>
             <span className="text-[10px] text-slate-400 font-medium">
               {isBn ? 'বিক্রি দাম অনুযায়ী সম্ভাব্য রেভিনিউ' : 'Unrealized retail revenue'}
@@ -354,7 +354,7 @@ export const ExpiredProductsView: React.FC = () => {
                       </div>
                     </td>
                     <td className="p-4 text-center font-bold text-slate-800 dark:text-slate-100">
-                      {symbol}{costValue.toLocaleString()}
+                      {formatCurrency(costValue)}
                     </td>
                     <td className="p-4 text-center">
                       <div className="flex items-center justify-center gap-1.5">
@@ -511,8 +511,8 @@ export const ExpiredProductsView: React.FC = () => {
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                 {isBn
-                  ? `মোট ${totalExpiredItems}টি মেয়াদোত্তীর্ণ পণ্যের ${totalExpiredStockQty} ইউনিট স্টক একবারে রাইট-অফ করা হবে। (মোট ক্ষতি: ${symbol}${totalCostLoss.toLocaleString()})`
-                  : `This will write off ${totalExpiredStockQty} stock units across ${totalExpiredItems} expired products (Total Cost Loss: ${symbol}${totalCostLoss.toLocaleString()}).`}
+                  ? `মোট ${totalExpiredItems}টি মেয়াদোত্তীর্ণ পণ্যের ${totalExpiredStockQty} ইউনিট স্টক একবারে রাইট-অফ করা হবে। (মোট ক্ষতি: ${formatCurrency(totalCostLoss)})`
+                  : `This will write off ${totalExpiredStockQty} stock units across ${totalExpiredItems} expired products (Total Cost Loss: ${formatCurrency(totalCostLoss)}).`}
               </p>
             </div>
             <div className="flex items-center justify-center gap-2 pt-2">

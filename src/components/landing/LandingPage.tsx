@@ -58,7 +58,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenLogin, onOpenSig
         {/* Hero Section */}
         <LandingHero
           onOpenSignup={onOpenSignup}
-          onOpenLogin={onOpenLogin}
           onOpenDemo={onOpenDemo}
         />
 

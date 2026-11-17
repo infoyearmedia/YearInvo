@@ -545,9 +545,9 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30 overflow-hidden">
-                    {detectedProduct.image ? (
+                    {detectedProduct.imageUrl ? (
                       <img
-                        src={detectedProduct.image}
+                        src={detectedProduct.imageUrl}
                         alt={detectedProduct.name}
                         className="w-full h-full object-cover"
                         referrerPolicy="no-referrer"
@@ -567,7 +567,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
                       SKU: #{detectedProduct.sku || detectedProduct.id} • {isBn ? 'স্টক:' : 'Stock:'}{' '}
                       <span className="font-bold text-slate-700 dark:text-slate-200">
-                        {detectedProduct.currentStock ?? detectedProduct.stock}
+                        {detectedProduct.currentStock}
                       </span>
                     </p>
                   </div>
@@ -579,7 +579,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
                   </span>
                   <span className="text-base font-black text-emerald-600 dark:text-emerald-400">
                     {symbol}
-                    {detectedProduct.sellingPrice ?? detectedProduct.price}
+                    {detectedProduct.sellingPrice}
                   </span>
                 </div>
               </div>

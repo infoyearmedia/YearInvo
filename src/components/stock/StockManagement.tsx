@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
+import { getPlanLimits } from '../../config/pricing';
 import { Product, StockAdjustment } from '../../types';
 import {
   Boxes,
@@ -21,10 +22,12 @@ import {
   ShieldAlert,
   ClipboardList,
   Sparkles,
+  Lock,
 } from 'lucide-react';
 
 export const StockManagement: React.FC = () => {
   const {
+    user,
     products,
     updateProduct,
     adjustments,
@@ -34,10 +37,13 @@ export const StockManagement: React.FC = () => {
     settings,
     language,
     setActiveTab,
+    formatCurrency,
     t,
   } = useApp();
 
-  const symbol = settings.currency || '৳';
+  // Smart Reorder is Premium-only: show a lock so Free/Pro users are warned
+  // before landing on the upgrade screen. Navigation is unchanged.
+  const isSmartReorderAllowed = getPlanLimits(user?.subscriptionPlan, user?.subscriptionStatus === 'expired').isSmartReorderAllowed;
 
   // Sub-tabs: 'current' | 'adjustments' | 'lowstock' | 'damaged' | 'movement'
   const [subTab, setSubTab] = useState<'current' | 'adjustments' | 'lowstock' | 'damaged' | 'movement'>('current');
@@ -156,10 +162,10 @@ export const StockManagement: React.FC = () => {
         items.push({
           id: `${sale.id}-${idx}`,
           date: sale.date.split('T')[0],
-          productName: sItem.name,
+          productName: sItem.productName,
           type: 'Sale',
           quantityDelta: -sItem.quantity,
-          reference: sale.receiptNo,
+          reference: sale.invoiceNo,
           reason: `Customer Sale (${sale.paymentMethod})`,
         });
       });
@@ -172,7 +178,7 @@ export const StockManagement: React.FC = () => {
   // Overall Inventory Stats
   const totalStockQuantity = products.reduce((acc, p) => acc + p.currentStock, 0);
   const totalCostValuation = products.reduce((acc, p) => acc + p.currentStock * p.buyingPrice, 0);
-  const totalSellingValuation = products.reduce((acc, p) => acc + p.currentStock * p.price, 0);
+  const totalSellingValuation = products.reduce((acc, p) => acc + p.currentStock * p.sellingPrice, 0);
   const totalDamagedLoss = damagedAdjustments.reduce((acc, a) => {
     const prod = products.find((p) => p.id === a.productId);
     const cost = prod?.buyingPrice || 0;
@@ -256,9 +262,9 @@ export const StockManagement: React.FC = () => {
         p.currentStock,
         p.minStockAlert,
         p.buyingPrice,
-        p.price,
+        p.sellingPrice,
         p.currentStock * p.buyingPrice,
-        p.currentStock * p.price,
+        p.currentStock * p.sellingPrice,
         p.expiryDate || 'N/A',
       ]),
     ];
@@ -345,10 +351,10 @@ export const StockManagement: React.FC = () => {
             </div>
           </div>
           <p className="text-xl font-black text-indigo-600 dark:text-indigo-400">
-            {symbol} {(totalCostValuation || 0).toLocaleString()}
+            {formatCurrency((totalCostValuation || 0))}
           </p>
           <span className="text-[10px] text-slate-400 font-semibold">
-            Selling Val: {symbol} {(totalSellingValuation || 0).toLocaleString()}
+            Selling Val: {formatCurrency((totalSellingValuation || 0))}
           </span>
         </div>
 
@@ -377,7 +383,7 @@ export const StockManagement: React.FC = () => {
             </div>
           </div>
           <p className="text-xl font-black text-rose-600 dark:text-rose-400">
-            {symbol} {(totalDamagedLoss || 0).toLocaleString()}
+            {formatCurrency((totalDamagedLoss || 0))}
           </p>
           <span className="text-[10px] text-slate-400 font-semibold">{damagedAdjustments.length} write-off incidents</span>
         </div>
@@ -521,15 +527,15 @@ export const StockManagement: React.FC = () => {
                       </td>
 
                       <td className="p-3.5 text-right font-mono text-slate-600 dark:text-slate-300">
-                        {symbol} {(p.buyingPrice || 0).toLocaleString()}
+                        {formatCurrency((p.buyingPrice || 0))}
                       </td>
 
                       <td className="p-3.5 text-right font-mono text-slate-800 dark:text-slate-100 font-bold">
-                        {symbol} {(p.price || 0).toLocaleString()}
+                        {formatCurrency((p.sellingPrice || 0))}
                       </td>
 
                       <td className="p-3.5 text-right font-mono font-black text-indigo-600 dark:text-indigo-400">
-                        {symbol} {((p.currentStock || 0) * (p.buyingPrice || 0)).toLocaleString()}
+                        {formatCurrency(((p.currentStock || 0) * (p.buyingPrice || 0)))}
                       </td>
 
                       <td className="p-3.5 text-center">
@@ -661,7 +667,7 @@ export const StockManagement: React.FC = () => {
                           +{deficit} {p.unit || 'pcs'}
                         </td>
                         <td className="p-3.5 text-right font-mono font-bold text-slate-800 dark:text-slate-200">
-                          {symbol} {(restockCost || 0).toLocaleString()}
+                          {formatCurrency((restockCost || 0))}
                         </td>
                         <td className="p-3.5 text-center">
                           <button
@@ -670,6 +676,7 @@ export const StockManagement: React.FC = () => {
                           >
                             <Sparkles className="w-3.5 h-3.5" />
                             Smart Reorder
+                            {!isSmartReorderAllowed && <Lock className="w-3.5 h-3.5" />}
                           </button>
                         </td>
                       </tr>
@@ -755,7 +762,7 @@ export const StockManagement: React.FC = () => {
                         </td>
                         <td className="p-3.5 text-slate-600 dark:text-slate-300">{dam.reason}</td>
                         <td className="p-3.5 text-right font-mono font-black text-rose-600 dark:text-rose-400">
-                          {symbol} {(loss || 0).toLocaleString()}
+                          {formatCurrency((loss || 0))}
                         </td>
                         <td className="p-3.5 text-slate-500 font-semibold">{dam.adjustedBy || 'Admin'}</td>
                       </tr>

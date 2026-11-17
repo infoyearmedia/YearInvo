@@ -31,13 +31,16 @@ export const PurchasesView: React.FC = () => {
     products,
     suppliers,
     addSupplier,
-    collectDuePayment,
+    collectDue,
+    dueCollections,
     settings,
     language,
     t,
+    formatCurrency,
+    displayCurrencySymbol,
   } = useApp();
 
-  const symbol = settings.currency || '৳';
+  const symbol = displayCurrencySymbol;
 
   // Filters & State
   const [searchQuery, setSearchQuery] = useState('');
@@ -63,7 +66,7 @@ export const PurchasesView: React.FC = () => {
   const [newPurchaseDate, setNewPurchaseDate] = useState(new Date().toISOString().split('T')[0]);
   const [newPurchaseNote, setNewPurchaseNote] = useState('');
   const [selectedProductToAdd, setSelectedProductToAdd] = useState('');
-  const [itemBuyingPrice, setItemBuyingPrice] = useState<number>(0);
+  const [itemBuyingPrice, setItemBuyingPrice] = useState<number | ''>('');
   const [itemQuantity, setItemQuantity] = useState<number>(1);
   const [itemUnit, setItemUnit] = useState('pcs');
 
@@ -91,7 +94,9 @@ export const PurchasesView: React.FC = () => {
       return;
     }
 
-    const price = itemBuyingPrice >= 0 ? itemBuyingPrice : prod.buyingPrice;
+    // Empty buying-price input falls back to the product's own buying price
+    // (an empty input must not record a 0 buying price).
+    const price = itemBuyingPrice === '' ? prod.buyingPrice : itemBuyingPrice;
     const lineTotal = price * itemQuantity;
 
     const existingIdx = newPurchaseItems.findIndex((i) => i.productId === prod.id);
@@ -118,7 +123,7 @@ export const PurchasesView: React.FC = () => {
     // Reset draft item inputs
     setSelectedProductToAdd('');
     setItemQuantity(1);
-    setItemBuyingPrice(0);
+    setItemBuyingPrice('');
   };
 
   const handleRemoveDraftItem = (index: number) => {
@@ -199,10 +204,9 @@ export const PurchasesView: React.FC = () => {
     if (!payDueSupplier || payDueAmount <= 0) return;
 
     try {
-      await collectDuePayment({
+      await collectDue({
         type: 'supplier',
         entityId: payDueSupplier.id,
-        entityName: payDueSupplier.name,
         amountPaid: payDueAmount,
         paymentMethod: payDueMethod,
         note: payDueNote || `Payment against outstanding purchases`,
@@ -252,10 +256,16 @@ export const PurchasesView: React.FC = () => {
     });
   }, [purchases, searchQuery, statusFilter, supplierFilter, dateFilter]);
 
-  // Overall Metrics
+  // Overall Metrics — recomputed from purchases minus collections, the same
+  // way SupplierDirectoryView computes supplier dues (stored supplier.dueAmount
+  // can drift from the purchase/collection records, so it is not the source of truth).
   const totalPurchasesAmount = purchases.reduce((acc, p) => acc + (Number(p.totalAmount) || 0), 0);
-  const totalPurchasesPaid = purchases.reduce((acc, p) => acc + (Number(p.paidAmount) || 0), 0);
-  const totalPurchasesDue = suppliers.reduce((acc, s) => acc + (Number(s.dueAmount) || 0), 0);
+  const supplierSubsequentPaid = dueCollections
+    .filter((d) => d.type === 'supplier')
+    .reduce((acc, d) => acc + (Number(d.amountPaid) || 0), 0);
+  const totalPurchasesPaid =
+    purchases.reduce((acc, p) => acc + (Number(p.paidAmount) || 0), 0) + supplierSubsequentPaid;
+  const totalPurchasesDue = Math.max(0, totalPurchasesAmount - totalPurchasesPaid);
 
   const todayStr = new Date().toISOString().split('T')[0];
   const todayPurchases = purchases.filter((p) => p.date.startsWith(todayStr));
@@ -338,7 +348,7 @@ export const PurchasesView: React.FC = () => {
             </div>
           </div>
           <p className="text-xl font-black text-slate-800 dark:text-slate-100">
-            {symbol} {(totalPurchasesAmount || 0).toLocaleString()}
+            {formatCurrency((totalPurchasesAmount || 0))}
           </p>
           <span className="text-[10px] text-slate-400 font-semibold">{purchases.length} invoices recorded</span>
         </div>
@@ -353,7 +363,7 @@ export const PurchasesView: React.FC = () => {
             </div>
           </div>
           <p className="text-xl font-black text-emerald-600 dark:text-emerald-400">
-            {symbol} {(totalPurchasesPaid || 0).toLocaleString()}
+            {formatCurrency((totalPurchasesPaid || 0))}
           </p>
           <span className="text-[10px] text-slate-400 font-semibold">Cleared vendor payments</span>
         </div>
@@ -368,7 +378,7 @@ export const PurchasesView: React.FC = () => {
             </div>
           </div>
           <p className="text-xl font-black text-rose-600 dark:text-rose-400">
-            {symbol} {(totalPurchasesDue || 0).toLocaleString()}
+            {formatCurrency((totalPurchasesDue || 0))}
           </p>
           <span className="text-[10px] text-slate-400 font-semibold">Outstanding balance to suppliers</span>
         </div>
@@ -383,7 +393,7 @@ export const PurchasesView: React.FC = () => {
             </div>
           </div>
           <p className="text-xl font-black text-indigo-600 dark:text-indigo-400">
-            {symbol} {(todayPurchasesTotal || 0).toLocaleString()}
+            {formatCurrency((todayPurchasesTotal || 0))}
           </p>
           <span className="text-[10px] text-slate-400 font-semibold">{todayPurchases.length} invoices today</span>
         </div>
@@ -504,17 +514,17 @@ export const PurchasesView: React.FC = () => {
                     </td>
 
                     <td className="p-3.5 text-right font-black text-slate-800 dark:text-slate-100 font-mono text-sm">
-                      {symbol} {(purchase.totalAmount || 0).toLocaleString()}
+                      {formatCurrency((purchase.totalAmount || 0))}
                     </td>
 
                     <td className="p-3.5 text-right font-bold text-emerald-600 dark:text-emerald-400 font-mono">
-                      {symbol} {(purchase.paidAmount || 0).toLocaleString()}
+                      {formatCurrency((purchase.paidAmount || 0))}
                     </td>
 
                     <td className="p-3.5 text-right font-bold font-mono">
                       {purchase.dueAmount > 0 ? (
                         <span className="text-rose-600 dark:text-rose-400 font-black">
-                          {symbol} {(purchase.dueAmount || 0).toLocaleString()}
+                          {formatCurrency((purchase.dueAmount || 0))}
                         </span>
                       ) : (
                         <span className="text-slate-400">0</span>
@@ -621,7 +631,7 @@ export const PurchasesView: React.FC = () => {
                     <option value="">-- Select Supplier --</option>
                     {suppliers.map((s) => (
                       <option key={s.id} value={s.id}>
-                        {s.name} ({s.company}) {s.dueAmount > 0 ? `[Current Due: ${symbol}${s.dueAmount}]` : ''}
+                        {s.name} ({s.company}) {s.dueAmount > 0 ? `[Current Due: ${formatCurrency(s.dueAmount)}]` : ''}
                       </option>
                     ))}
                   </select>
@@ -657,7 +667,7 @@ export const PurchasesView: React.FC = () => {
                         setSelectedProductToAdd(e.target.value);
                         const prod = products.find((p) => p.id === e.target.value);
                         if (prod) {
-                          setItemBuyingPrice(prod.buyingPrice || 0);
+                          setItemBuyingPrice(prod.buyingPrice ? prod.buyingPrice : '');
                           setItemUnit(prod.unit || 'pcs');
                         }
                       }}
@@ -680,8 +690,8 @@ export const PurchasesView: React.FC = () => {
                       min="0"
                       step="any"
                       value={itemBuyingPrice}
-                      onChange={(e) => setItemBuyingPrice(Number(e.target.value))}
-                      placeholder="0.00"
+                      onChange={(e) => setItemBuyingPrice(e.target.value === '' ? '' : Number(e.target.value))}
+                      placeholder="Product buying price"
                       className="w-full px-2.5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-bold text-xs"
                     />
                   </div>
@@ -734,10 +744,10 @@ export const PurchasesView: React.FC = () => {
                               {item.quantity} {item.unit}
                             </td>
                             <td className="p-2.5 text-right font-mono">
-                              {symbol} {(item.buyingPrice || 0).toLocaleString()}
+                              {formatCurrency((item.buyingPrice || 0))}
                             </td>
                             <td className="p-2.5 text-right font-bold text-slate-800 dark:text-slate-100 font-mono">
-                              {symbol} {(item.total || 0).toLocaleString()}
+                              {formatCurrency((item.total || 0))}
                             </td>
                             <td className="p-2.5 text-center">
                               <button
@@ -790,7 +800,7 @@ export const PurchasesView: React.FC = () => {
                   <div className="flex justify-between items-center text-sm font-semibold">
                     <span className="text-slate-600 dark:text-slate-400">Total Purchase:</span>
                     <span className="font-black text-slate-800 dark:text-slate-100 text-base">
-                      {symbol} {(purchaseSubtotal || 0).toLocaleString()}
+                      {formatCurrency((purchaseSubtotal || 0))}
                     </span>
                   </div>
 
@@ -822,7 +832,7 @@ export const PurchasesView: React.FC = () => {
                   <div className="pt-2 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center">
                     <span className="font-bold text-slate-700 dark:text-slate-300">Supplier Due Balance:</span>
                     <span className={`font-black text-base ${calculatedDueAmount > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600'}`}>
-                      {symbol} {(calculatedDueAmount || 0).toLocaleString()}
+                      {formatCurrency((calculatedDueAmount || 0))}
                     </span>
                   </div>
                 </div>
@@ -954,7 +964,7 @@ export const PurchasesView: React.FC = () => {
               <p className="font-black text-slate-800 dark:text-slate-100">{payDueSupplier.name}</p>
               <p className="text-slate-500">{payDueSupplier.company}</p>
               <p className="text-rose-600 dark:text-rose-400 font-extrabold pt-1">
-                Outstanding Due Balance: {symbol} {(payDueSupplier.dueAmount || 0).toLocaleString()}
+                Outstanding Due Balance: {formatCurrency((payDueSupplier.dueAmount || 0))}
               </p>
             </div>
 

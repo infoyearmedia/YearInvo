@@ -4,7 +4,6 @@ import { useApp } from '../../context/AppContext';
 import { getDisplayBrandName } from '../../utils/brand';
 import {
   ShoppingCart,
-  Printer,
   FileText,
   CheckCircle2,
   ScanBarcode,
@@ -12,13 +11,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 
-interface RetailInventoryAnimationProps {
-  onOpenSignup?: () => void;
-}
-
-export const RetailInventoryAnimation: React.FC<RetailInventoryAnimationProps> = ({
-  onOpenSignup,
-}) => {
+export const RetailInventoryAnimation: React.FC = () => {
   const { settings, language, convertMoney, displayCurrencySymbol } = useApp();
   const isBn = language === 'bn';
   // Convert a BDT amount to the selected display currency using the same
@@ -126,26 +119,6 @@ export const RetailInventoryAnimation: React.FC<RetailInventoryAnimationProps> =
             <CheckCircle2 className="w-3.5 h-3.5" />
             {isBn ? 'পরিশোধিত' : 'PAID'}
           </span>
-        </div>
-
-        {/* Thermal / A4 buttons */}
-        <div className="flex items-center gap-2 pt-3">
-          <button
-            type="button"
-            onClick={onOpenSignup}
-            className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-          >
-            <Printer className="w-3.5 h-3.5" />
-            {isBn ? 'থার্মাল প্রিন্ট' : 'Thermal Print'}
-          </button>
-          <button
-            type="button"
-            onClick={onOpenSignup}
-            className="flex-1 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-          >
-            <FileText className="w-3.5 h-3.5" />
-            {isBn ? 'A4 ইনভয়েস' : 'A4 Invoice'}
-          </button>
         </div>
       </motion.div>
 

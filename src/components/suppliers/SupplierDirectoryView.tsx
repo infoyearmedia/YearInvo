@@ -45,9 +45,11 @@ export const SupplierDirectoryView: React.FC<SupplierDirectoryViewProps> = ({
     settings,
     formatDate,
     t,
+    formatCurrency,
+    displayCurrencySymbol,
   } = useApp();
 
-  const symbol = settings.currency || '৳';
+  const symbol = displayCurrencySymbol;
 
   // Search & Filter State
   const [searchTerm, setSearchTerm] = useState('');
@@ -221,7 +223,7 @@ export const SupplierDirectoryView: React.FC<SupplierDirectoryViewProps> = ({
     const maxDue = metrics ? metrics.outstandingDue : payingSupplier.dueAmount;
 
     if (amount > maxDue && maxDue > 0) {
-      if (!confirm(`The amount (${symbol}${amount}) is greater than the outstanding due (${symbol}${maxDue}). Proceed?`)) {
+      if (!confirm(`The amount (${formatCurrency(amount)}) is greater than the outstanding due (${formatCurrency(maxDue)}). Proceed?`)) {
         return;
       }
     }
@@ -296,7 +298,7 @@ export const SupplierDirectoryView: React.FC<SupplierDirectoryViewProps> = ({
             </div>
           </div>
           <p className="text-2xl font-black text-slate-900 dark:text-white mt-2">
-            {symbol} {(globalKpis.grandPurchases || 0).toLocaleString()}
+            {formatCurrency((globalKpis.grandPurchases || 0))}
           </p>
           <p className="text-[11px] text-slate-400 mt-0.5">
             Total inventory cost invoiced
@@ -312,7 +314,7 @@ export const SupplierDirectoryView: React.FC<SupplierDirectoryViewProps> = ({
             </div>
           </div>
           <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-2">
-            {symbol} {(globalKpis.grandPaid || 0).toLocaleString()}
+            {formatCurrency((globalKpis.grandPaid || 0))}
           </p>
           <p className="text-[11px] text-slate-400 mt-0.5">
             Settled to suppliers
@@ -328,7 +330,7 @@ export const SupplierDirectoryView: React.FC<SupplierDirectoryViewProps> = ({
             </div>
           </div>
           <p className="text-2xl font-black text-rose-600 dark:text-rose-400 mt-2">
-            {symbol} {(globalKpis.grandDue || 0).toLocaleString()}
+            {formatCurrency((globalKpis.grandDue || 0))}
           </p>
           <p className="text-[11px] text-slate-400 mt-0.5">
             Across {globalKpis.suppliersWithDueCount} suppliers
@@ -477,7 +479,7 @@ export const SupplierDirectoryView: React.FC<SupplierDirectoryViewProps> = ({
                       {/* Total Purchases */}
                       <td className="py-3.5 px-4 text-right">
                         <div className="font-black text-slate-900 dark:text-white">
-                          {symbol} {(m.totalPurchasesAmount || 0).toLocaleString()}
+                          {formatCurrency((m.totalPurchasesAmount || 0))}
                         </div>
                         <div className="text-[10px] text-slate-400">
                           {m.invoiceCount} invoices
@@ -487,7 +489,7 @@ export const SupplierDirectoryView: React.FC<SupplierDirectoryViewProps> = ({
                       {/* Total Paid */}
                       <td className="py-3.5 px-4 text-right">
                         <div className="font-black text-emerald-600 dark:text-emerald-400">
-                          {symbol} {(m.totalPaid || 0).toLocaleString()}
+                          {formatCurrency((m.totalPaid || 0))}
                         </div>
                         <div className="text-[10px] text-slate-400">
                           {Math.round(((m.totalPaid || 0) / (m.totalPurchasesAmount || 1)) * 100)}% settled
@@ -501,7 +503,7 @@ export const SupplierDirectoryView: React.FC<SupplierDirectoryViewProps> = ({
                             hasDue ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400'
                           }`}
                         >
-                          {symbol} {(m.outstandingDue || 0).toLocaleString()}
+                          {formatCurrency((m.outstandingDue || 0))}
                         </div>
                       </td>
 
@@ -623,12 +625,11 @@ export const SupplierDirectoryView: React.FC<SupplierDirectoryViewProps> = ({
                   Current Outstanding Due:
                 </span>
                 <span className="text-base font-black text-rose-600 dark:text-rose-400">
-                  {symbol}{' '}
-                  {(
+                  {formatCurrency(
                     supplierMetricsMap.get(payingSupplier.id)?.outstandingDue ??
                     payingSupplier.dueAmount ??
                     0
-                  ).toLocaleString()}
+                  )}
                 </span>
               </div>
 

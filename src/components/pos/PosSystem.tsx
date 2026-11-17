@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Product, Sale } from '../../types';
 import { QuickReceiptModal } from '../sales/QuickReceiptModal';
@@ -6,7 +6,7 @@ import { ReceiptModal } from './ReceiptModal';
 import { QrScannerModal } from './QrScannerModal';
 import { CustomerSelector } from '../common/CustomerSelector';
 import { DeviceAuthorizationGuard } from '../common/DeviceAuthorizationGuard';
-import { findProductByCode, findProductWithStoreCheck } from '../../utils/scanner';
+import { findProductWithStoreCheck } from '../../utils/scanner';
 import { playSuccessSound, playBeepSound } from '../../utils/audio';
 import { SyncStatusIndicator } from '../common/SyncStatusIndicator';
 import { PaymentMethodIcon } from '../common/PaymentLogos';
@@ -31,8 +31,6 @@ import {
   CheckSquare,
   Square,
   Lock,
-  Monitor,
-  Landmark,
   FileSpreadsheet,
   Scan,
   Volume2,
@@ -56,13 +54,32 @@ export const PosSystem: React.FC = () => {
     settings,
     language,
     t,
+    formatCurrency,
+    convertMoney,
+    storeBaseCurrency,
+    displayCurrencySymbol,
   } = useApp();
 
   const plan = user?.subscriptionPlan || 'Free';
-  const isProOrPremium = plan === 'Pro' || plan === 'Tier2' || plan === 'Premium' || plan === 'Business' || plan === 'Lifetime';
   const isPremiumPlan = plan === 'Premium' || plan === 'Business' || plan === 'Lifetime';
 
-  const symbol = settings.currency || '৳';
+  const symbol = displayCurrencySymbol;
+
+  // Quick-cash tender denominations, in the store's BASE currency (the paid-amount
+  // input they feed is in base currency). A USD store gets $1/$5/$10/$20, a BDT
+  // store keeps 100/500/1000; other currencies convert the BDT bases and round
+  // to a sensible denomination. Labels go through formatCurrency (base -> display).
+  const quickCashDenominations = useMemo(() => {
+    const base = (storeBaseCurrency || 'BDT').toUpperCase();
+    if (['USD', 'EUR', 'GBP', 'AUD', 'CAD', 'SGD', 'AED', 'SAR'].includes(base)) return [1, 5, 10, 20];
+    if (['BDT', 'INR', 'PKR', 'MYR'].includes(base)) return [100, 500, 1000];
+    return [100, 500, 1000].map((b) => {
+      const converted = convertMoney(b, 'BDT', base);
+      if (converted >= 100) return Math.round(converted / 10) * 10;
+      if (converted >= 10) return Math.round(converted / 5) * 5;
+      return Math.max(1, Math.round(converted));
+    });
+  }, [storeBaseCurrency, convertMoney]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -77,8 +94,6 @@ export const PosSystem: React.FC = () => {
   const [lastScannedProduct, setLastScannedProduct] = useState<Product | null>(null);
   const [completedSale, setCompletedSale] = useState<Sale | null>(null);
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
-  const [showCustomerDisplay, setShowCustomerDisplay] = useState(false);
-  const [drawerOpenMessage, setDrawerOpenMessage] = useState(false);
   const [isQrPaymentModalOpen, setIsQrPaymentModalOpen] = useState(false);
 
   // Multi-Select Products State
@@ -89,22 +104,6 @@ export const PosSystem: React.FC = () => {
   const [isAddCustModalOpen, setIsAddCustModalOpen] = useState(false);
   const [newCustName, setNewCustName] = useState('');
   const [newCustPhone, setNewCustPhone] = useState('');
-
-  // Audio Beep Sound helper
-  const playBeepSound = () => {
-    try {
-      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(1200, ctx.currentTime);
-      gain.gain.setValueAtTime(0.1, ctx.currentTime);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.1);
-    } catch (e) {}
-  };
 
   // Hardware Barcode Scanner Keyboard Listener
   useEffect(() => {
@@ -270,7 +269,7 @@ export const PosSystem: React.FC = () => {
     }
 
     if (remainingDue > 0 && !selectedCustomerId) {
-      alert('A remaining due balance of ' + symbol + (remainingDue || 0).toLocaleString() + ' requires choosing a registered customer! Please select or add a customer.');
+      alert('A remaining due balance of ' + formatCurrency(remainingDue || 0) + ' requires choosing a registered customer! Please select or add a customer.');
       return;
     }
 
@@ -428,18 +427,6 @@ export const PosSystem: React.FC = () => {
             </span>
           </button>
 
-          <button
-            onClick={() => setShowCustomerDisplay(!showCustomerDisplay)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
-              showCustomerDisplay
-                ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200'
-            }`}
-            title="Customer Display Screen"
-          >
-            <Monitor className="w-4 h-4" />
-            <span className="hidden md:inline">Display</span>
-          </button>
         </div>
 
         {/* Hardware Scanner Active Status Badge & Offline Sync Indicator */}
@@ -456,16 +443,6 @@ export const PosSystem: React.FC = () => {
             </div>
           </div>
         </div>
-
-        {drawerOpenMessage && (
-          <div className="p-2 mb-2 rounded-xl bg-emerald-500 text-white text-xs font-extrabold flex items-center justify-between shadow-md animate-in fade-in">
-            <div className="flex items-center gap-2">
-              <Landmark className="w-4 h-4" />
-              <span>Cash Drawer Signal Triggered</span>
-            </div>
-            <span className="text-[10px] uppercase font-mono">READY</span>
-          </div>
-        )}
 
         {/* Multi-Select Action Sub-Bar */}
         {(isMultiSelectMode || selectedProductIds.length > 0) && (
@@ -621,7 +598,7 @@ export const PosSystem: React.FC = () => {
 
                   <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-slate-200/40 dark:border-slate-700/40">
                     <span className={`font-black text-xs ${isExpired ? 'text-rose-600 dark:text-rose-400' : 'text-[#ff5c01]'}`}>
-                      {symbol} {prod.sellingPrice}
+                      {formatCurrency(prod.sellingPrice)}
                     </span>
                     {!isExpired && (
                       <button
@@ -692,9 +669,9 @@ export const PosSystem: React.FC = () => {
                       )}
                     </div>
                     <span className="text-[10px] text-slate-400">
-                      {symbol} {item.product.sellingPrice} × {item.quantity} ={' '}
+                      {formatCurrency(item.product.sellingPrice)} × {item.quantity} ={' '}
                       <strong className="text-slate-700 dark:text-slate-300">
-                        {symbol} {item.product.sellingPrice * item.quantity}
+                        {formatCurrency(item.product.sellingPrice * item.quantity)}
                       </strong>
                     </span>
                   </div>
@@ -747,9 +724,7 @@ export const PosSystem: React.FC = () => {
               <div className="grid grid-cols-4 gap-1.5">
                 {[
                   { label: 'Exact', amount: grandTotal },
-                  { label: symbol + '100', amount: 100 },
-                  { label: symbol + '500', amount: 500 },
-                  { label: symbol + '1000', amount: 1000 },
+                  ...quickCashDenominations.map((amount) => ({ label: formatCurrency(amount), amount })),
                 ].map((tender, i) => (
                   <button
                     key={i}
@@ -809,7 +784,7 @@ export const PosSystem: React.FC = () => {
                   />
                   {discountType === 'percent' && discountValue > 0 && (
                     <span className="absolute right-2 top-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-                      (-{symbol}{calculatedDiscount})
+                      (-{formatCurrency(calculatedDiscount)})
                     </span>
                   )}
                 </div>
@@ -848,7 +823,7 @@ export const PosSystem: React.FC = () => {
             <div className="flex items-center justify-between text-xs pt-1.5 border-t border-slate-200/60 dark:border-slate-700/60">
               <span className="font-semibold text-slate-600 dark:text-slate-400">Remaining Due (Credit):</span>
               <span className={`font-black text-xs ${remainingDue > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                {symbol} {(remainingDue || 0).toLocaleString()}
+                {formatCurrency((remainingDue || 0))}
               </span>
             </div>
 
@@ -866,7 +841,7 @@ export const PosSystem: React.FC = () => {
             {changeReturn > 0 && (
               <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200/60 dark:border-slate-700/60">
                 <span className="font-medium text-slate-500">Change Return:</span>
-                <span className="font-black text-amber-500">{symbol} {(changeReturn || 0).toLocaleString()}</span>
+                <span className="font-black text-amber-500">{formatCurrency((changeReturn || 0))}</span>
               </div>
             )}
           </div>
@@ -911,13 +886,13 @@ export const PosSystem: React.FC = () => {
             <div>
               <span className="text-[10px] uppercase text-slate-400 font-bold block">{t('grandTotal')}</span>
               <span className="text-xl font-black text-[#ff5c01]">
-                {symbol} {(grandTotal || 0).toLocaleString()}
+                {formatCurrency((grandTotal || 0))}
               </span>
             </div>
             <div className="text-right">
               <span className="text-[10px] text-slate-400 block font-semibold">Net Received</span>
               <span className="text-xs font-bold text-emerald-400">
-                {symbol} {(numericPaid || 0).toLocaleString()}
+                {formatCurrency((numericPaid || 0))}
               </span>
             </div>
           </div>
@@ -965,29 +940,19 @@ export const PosSystem: React.FC = () => {
               </button>
             </div>
 
-            {settings.paymentSettings?.qrEnabled && (settings.paymentSettings?.qrImageUrl || settings.paymentSettings?.qrProvider) ? (
+            {settings.paymentSettings?.qrEnabled && settings.paymentSettings?.qrImageUrl ? (
               <>
                 <div className="bg-white p-4 rounded-2xl inline-block shadow-inner mx-auto">
-                  {settings.paymentSettings?.qrImageUrl ? (
-                    <img
-                      src={settings.paymentSettings.qrImageUrl}
-                      alt="Store QR Payment"
-                      className="w-48 h-48 object-contain mx-auto"
-                    />
-                  ) : (
-                    <img
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
-                        `${settings.paymentSettings?.qrProvider || 'PAYMENT'}-${settings.brandName || 'STORE'}-${grandTotal}`
-                      )}`}
-                      alt="Generated QR Payment"
-                      className="w-44 h-44 mx-auto"
-                    />
-                  )}
+                  <img
+                    src={settings.paymentSettings.qrImageUrl}
+                    alt="Store QR Payment"
+                    className="w-48 h-48 object-contain mx-auto"
+                  />
                 </div>
 
                 <div className="space-y-1 text-xs">
                   <p className="font-bold text-white">
-                    Scan to pay: <span className="text-[#ff5c01] text-base font-black">{symbol}{(grandTotal || 0).toLocaleString()}</span>
+                    Scan to pay: <span className="text-[#ff5c01] text-base font-black">{formatCurrency((grandTotal || 0))}</span>
                   </p>
                   <p className="text-xs text-slate-300 font-semibold">
                     Provider: <span className="text-[#ff5c01]">{settings.paymentSettings?.qrProvider || 'bKash'}</span>

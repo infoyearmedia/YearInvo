@@ -670,6 +670,8 @@ export interface UserProfile {
   // Subscription details
   startDate?: string;
   expiryDate?: string;
+  // Mirrors public.users.subscription_expires_at (written on approval).
+  subscriptionExpiresAt?: string;
   billingPeriod?: BillingCycle;
   transactionId?: string;
   paymentMethod?: string;
@@ -827,6 +829,8 @@ export interface Customer {
   loyaltyPoints?: number;
   totalPointsEarned?: number;
   totalPointsRedeemed?: number;
+  lastLoyaltyAdjustmentReason?: string;
+  lastLoyaltyAdjustmentAt?: string;
   favoriteProducts?: string[];
   lastPurchaseDate?: string;
   orderCount?: number;

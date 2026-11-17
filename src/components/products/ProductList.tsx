@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { getPlanLimits } from '../../config/pricing';
 import { ProductModal } from './ProductModal';
 import { ConfirmModal } from '../common/ConfirmModal';
 import { Product } from '../../types';
@@ -15,11 +16,17 @@ import {
   QrCode,
   CheckCircle,
   Sparkles,
+  Lock,
 } from 'lucide-react';
 
 export const ProductList: React.FC = () => {
-  const { products, categories, brands, deleteProduct, clearAllProducts, settings, setActiveTab, t, language } = useApp();
-  const symbol = settings.currency || '৳';
+  const { user, products, categories, brands, deleteProduct, clearAllProducts, settings, setActiveTab, t, language, formatCurrency } = useApp();
+
+  // Premium-gated destinations (POS / Barcode): show a lock so Free/Pro users
+  // are warned before landing on the upgrade screen. Navigation is unchanged.
+  const planLimits = getPlanLimits(user?.subscriptionPlan, user?.subscriptionStatus === 'expired');
+  const isPosAllowed = planLimits.isPosAllowed;
+  const isQrBarcodeAllowed = planLimits.isQrBarcodeAllowed;
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -149,19 +156,19 @@ export const ProductList: React.FC = () => {
         <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-[#E8EEF2] dark:border-slate-800/80 shadow-xs">
           <span className="text-[11px] font-semibold text-slate-500 uppercase">{t('totalCostValue')}</span>
           <p className="text-xl font-black text-slate-900 dark:text-slate-100 mt-1">
-            {symbol} {totalCost.toLocaleString()}
+            {formatCurrency(totalCost)}
           </p>
         </div>
         <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-[#E8EEF2] dark:border-slate-800/80 shadow-xs">
           <span className="text-[11px] font-semibold text-slate-500 uppercase">{t('totalSalesValue')}</span>
           <p className="text-xl font-black text-[#ff5c01] mt-1">
-            {symbol} {totalSelling.toLocaleString()}
+            {formatCurrency(totalSelling)}
           </p>
         </div>
         <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-[#E8EEF2] dark:border-slate-800/80 shadow-xs">
           <span className="text-[11px] font-semibold text-slate-500 uppercase">{t('expectedProfit')}</span>
           <p className="text-xl font-black text-emerald-500 mt-1">
-            {symbol} {totalExpectedProfit.toLocaleString()}
+            {formatCurrency(totalExpectedProfit)}
           </p>
         </div>
       </div>
@@ -229,8 +236,9 @@ export const ProductList: React.FC = () => {
               onClick={() => {
                 setActiveTab('pos');
               }}
-              className="px-3 py-1.5 bg-[#ff5c01] hover:bg-[#e05100] text-white rounded-xl shadow-xs transition-colors cursor-pointer"
+              className="px-3 py-1.5 bg-[#ff5c01] hover:bg-[#e05100] text-white rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1"
             >
+              {!isPosAllowed && <Lock className="w-3.5 h-3.5" />}
               Sell Selected in POS
             </button>
             <button
@@ -328,10 +336,10 @@ export const ProductList: React.FC = () => {
                     </span>
                   </td>
                   <td className="p-4 text-right font-bold text-slate-600 dark:text-slate-400">
-                    {symbol} {p.buyingPrice}
+                    {formatCurrency(p.buyingPrice)}
                   </td>
                   <td className="p-4 text-right font-bold text-[#ff5c01]">
-                    {symbol} {p.sellingPrice}
+                    {formatCurrency(p.sellingPrice)}
                   </td>
                   <td className="p-4 text-center font-bold text-slate-800 dark:text-slate-100">
                     {p.currentStock} {p.unit}
@@ -359,6 +367,7 @@ export const ProductList: React.FC = () => {
                         title="Generate Barcode"
                       >
                         <QrCode className="w-4 h-4" />
+                        {!isQrBarcodeAllowed && <Lock className="w-3 h-3 text-amber-500" />}
                       </button>
                       <button
                         onClick={() => {

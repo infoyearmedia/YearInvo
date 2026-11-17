@@ -792,7 +792,7 @@ export const Header: React.FC<{ onToggleSidebar?: () => void }> = ({ onToggleSid
                     {user?.subscriptionPlan || 'Free'}
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{user?.email || 'owner@yearinvo.com'}</p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{user?.email || ''}</p>
                 {storeDisplayName && (
                   <p className="text-[10px] font-bold text-[#ff5c01] uppercase tracking-wide truncate">
                     Store: {storeDisplayName}

@@ -94,11 +94,27 @@ const premium5YearPriceId =
   getEnv(metaEnv.PADDLE_PREMIUM_5_YEAR_PRICE_ID, 'VITE_PADDLE_PREMIUM_5_YEAR_PRICE_ID', '') ||
   '';
 
+// Card checkout is only possible once at least one real Paddle price ID
+// (pri_...) is configured in env. Until then checkout stays disabled and
+// manual local payment is the only path (see SubscriptionView).
+const hasAnyPaddlePriceId = [
+  proMonthlyPriceId,
+  pro6MonthPriceId,
+  proYearlyPriceId,
+  pro5YearPriceId,
+  premiumMonthlyPriceId,
+  premium6MonthPriceId,
+  premiumYearlyPriceId,
+  premium5YearPriceId,
+].some((id) => Boolean(id) && id.startsWith('pri_'));
+
 export const PADDLE_CONFIG = {
   environment,
   clientToken,
-  checkoutEnabled: true as boolean,
-  checkoutStatusReason: '' as string,
+  checkoutEnabled: hasAnyPaddlePriceId as boolean,
+  checkoutStatusReason: (hasAnyPaddlePriceId
+    ? ''
+    : 'Card checkout is not available yet — no Paddle price IDs are configured. Please pay manually (bKash / Nagad / Rocket / bank) and submit your transaction ID below for approval.') as string,
 
   priceIds: {
     // Pro Tier (4 Durations)
@@ -126,83 +142,14 @@ export const PADDLE_CONFIG = {
 };
 
 /**
- * Dynamically synchronizes Paddle configuration with the server runtime endpoint (/api/paddle/config)
- * if client-side variables were not baked in at build time.
+ * Runtime config sync REMOVED (audit: dead backend). The old implementation
+ * fetched /api/paddle/config, which never runs — the Vercel build is static
+ * Vite, so the endpoint returns index.html. This is now a no-op that keeps
+ * the build-time env config in PADDLE_CONFIG as-is.
  */
-let syncPromise: Promise<typeof PADDLE_CONFIG> | null = null;
-
-export const syncPaddleRuntimeConfig = async (forceRefresh = false): Promise<typeof PADDLE_CONFIG> => {
-  if (typeof window === 'undefined') {
-    return PADDLE_CONFIG;
-  }
-
-  if (syncPromise && !forceRefresh) {
-    return syncPromise;
-  }
-
-  syncPromise = (async () => {
-    try {
-      const url = forceRefresh ? '/api/paddle/config?refresh=true' : '/api/paddle/config';
-      const res = await fetch(url);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.environment) {
-          PADDLE_CONFIG.environment = data.environment;
-        }
-        if (data.clientToken && !PADDLE_CONFIG.clientToken) {
-          PADDLE_CONFIG.clientToken = data.clientToken;
-        }
-        if (typeof data.checkoutEnabled === 'boolean') {
-          PADDLE_CONFIG.checkoutEnabled = data.checkoutEnabled;
-          PADDLE_CONFIG.checkoutStatusReason = data.checkoutStatusReason || '';
-        }
-        if (data.priceIds) {
-          if (data.priceIds.proMonthly) {
-            PADDLE_CONFIG.priceIds.proMonthly = data.priceIds.proMonthly;
-            PADDLE_CONFIG.priceIds.proBase = data.priceIds.proMonthly;
-          }
-          if (data.priceIds.pro6Month) {
-            PADDLE_CONFIG.priceIds.pro6Month = data.priceIds.pro6Month;
-            PADDLE_CONFIG.priceIds.proSixMonth = data.priceIds.pro6Month;
-          }
-          if (data.priceIds.proYearly) {
-            PADDLE_CONFIG.priceIds.proYearly = data.priceIds.proYearly;
-          }
-          if (data.priceIds.pro5Year) {
-            PADDLE_CONFIG.priceIds.pro5Year = data.priceIds.pro5Year;
-            PADDLE_CONFIG.priceIds.proFiveYear = data.priceIds.pro5Year;
-          }
-
-          if (data.priceIds.premiumMonthly) {
-            PADDLE_CONFIG.priceIds.premiumMonthly = data.priceIds.premiumMonthly;
-            PADDLE_CONFIG.priceIds.premiumBase = data.priceIds.premiumMonthly;
-          }
-          if (data.priceIds.premium6Month) {
-            PADDLE_CONFIG.priceIds.premium6Month = data.priceIds.premium6Month;
-            PADDLE_CONFIG.priceIds.premiumSixMonth = data.priceIds.premium6Month;
-          }
-          if (data.priceIds.premiumYearly) {
-            PADDLE_CONFIG.priceIds.premiumYearly = data.priceIds.premiumYearly;
-          }
-          if (data.priceIds.premium5Year) {
-            PADDLE_CONFIG.priceIds.premium5Year = data.priceIds.premium5Year;
-            PADDLE_CONFIG.priceIds.premiumFiveYear = data.priceIds.premium5Year;
-          }
-        }
-      }
-    } catch (err) {
-      console.warn('[PADDLE CONFIG] Could not fetch server runtime config, using local config:', err);
-    }
-    return PADDLE_CONFIG;
-  })();
-
-  return syncPromise;
+export const syncPaddleRuntimeConfig = async (_forceRefresh = false): Promise<typeof PADDLE_CONFIG> => {
+  return PADDLE_CONFIG;
 };
-
-// Initiate non-blocking runtime configuration fetch in browser
-if (typeof window !== 'undefined') {
-  syncPaddleRuntimeConfig().catch(() => {});
-}
 
 /**
  * Returns the exact Paddle Price ID for a given plan and billing cycle/duration.

@@ -5,8 +5,7 @@ import { Product } from '../../types';
 import { Tags, Plus, Trash2, Package, Layers, ShieldAlert, ArrowLeft, Folder, ChevronRight, Store } from 'lucide-react';
 
 export const CategoryBrandView: React.FC = () => {
-  const { categories, brands, products, deleteProduct, addCategory, deleteCategory, addBrand, deleteBrand, settings, language } = useApp();
-  const symbol = settings.currency || '৳';
+  const { categories, brands, products, deleteProduct, addCategory, deleteCategory, addBrand, deleteBrand, settings, language, formatCurrency } = useApp();
 
   const [newCatName, setNewCatName] = useState('');
   const [newCatDesc, setNewCatDesc] = useState('');
@@ -17,6 +16,8 @@ export const CategoryBrandView: React.FC = () => {
 
   // Deletion modal state
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [categoryToDelete, setCategoryToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [brandToDelete, setBrandToDelete] = useState<{ id: string; name: string } | null>(null);
   const [isRemoveOutOfStockOpen, setIsRemoveOutOfStockOpen] = useState(false);
 
   const isBn = language === 'bn';
@@ -244,7 +245,7 @@ export const CategoryBrandView: React.FC = () => {
                         {prod.category} • SKU: {prod.sku}
                       </p>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs font-black text-[#ff5c01]">{symbol} {prod.sellingPrice}</span>
+                        <span className="text-xs font-black text-[#ff5c01]">{formatCurrency(prod.sellingPrice)}</span>
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
                           prod.currentStock > 10
                             ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
@@ -322,7 +323,7 @@ export const CategoryBrandView: React.FC = () => {
                     </span>
                     <button
                       type="button"
-                      onClick={() => deleteCategory(c.id)}
+                      onClick={() => setCategoryToDelete({ id: c.id, name: c.name })}
                       title="Delete category"
                       className="text-slate-400 hover:text-rose-500 transition-colors p-1 cursor-pointer"
                     >
@@ -365,7 +366,7 @@ export const CategoryBrandView: React.FC = () => {
                 <h4 className="font-bold text-xs text-slate-800 dark:text-slate-200">{b.name}</h4>
                 <button
                   type="button"
-                  onClick={() => deleteBrand(b.id)}
+                  onClick={() => setBrandToDelete({ id: b.id, name: b.name })}
                   title="Delete brand"
                   className="text-slate-400 hover:text-rose-500 transition-colors p-1 cursor-pointer"
                 >
@@ -396,6 +397,46 @@ export const CategoryBrandView: React.FC = () => {
           }
         }}
         onCancel={() => setProductToDelete(null)}
+      />
+
+      {/* Delete Category Confirmation Modal */}
+      <ConfirmModal
+        isOpen={Boolean(categoryToDelete)}
+        title={isBn ? 'ক্যাটাগরি মুছে ফেলার নিশ্চিতকরণ' : 'Delete Category Confirmation'}
+        message={
+          isBn
+            ? `আপনি কি নিশ্চিত যে "${categoryToDelete?.name}" ক্যাটাগরিটি স্থায়ীভাবে মুছে ফেলতে চান?`
+            : `Are you sure you want to delete category "${categoryToDelete?.name}"? This action cannot be undone.`
+        }
+        confirmText={isBn ? 'হ্যাঁ, মুছে ফেলুন' : 'Delete Category'}
+        cancelText={isBn ? 'বাতিল' : 'Cancel'}
+        onConfirm={() => {
+          if (categoryToDelete) {
+            deleteCategory(categoryToDelete.id);
+            setCategoryToDelete(null);
+          }
+        }}
+        onCancel={() => setCategoryToDelete(null)}
+      />
+
+      {/* Delete Brand Confirmation Modal */}
+      <ConfirmModal
+        isOpen={Boolean(brandToDelete)}
+        title={isBn ? 'ব্র্যান্ড মুছে ফেলার নিশ্চিতকরণ' : 'Delete Brand Confirmation'}
+        message={
+          isBn
+            ? `আপনি কি নিশ্চিত যে "${brandToDelete?.name}" ব্র্যান্ডটি স্থায়ীভাবে মুছে ফেলতে চান?`
+            : `Are you sure you want to delete brand "${brandToDelete?.name}"? This action cannot be undone.`
+        }
+        confirmText={isBn ? 'হ্যাঁ, মুছে ফেলুন' : 'Delete Brand'}
+        cancelText={isBn ? 'বাতিল' : 'Cancel'}
+        onConfirm={() => {
+          if (brandToDelete) {
+            deleteBrand(brandToDelete.id);
+            setBrandToDelete(null);
+          }
+        }}
+        onCancel={() => setBrandToDelete(null)}
       />
 
       {/* Delete Out of Stock Modal */}

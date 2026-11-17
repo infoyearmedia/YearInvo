@@ -6,7 +6,6 @@ import {
   Lock,
   Globe2,
   Mail,
-  Phone,
   Heart,
   X,
   CheckCircle2,
@@ -57,7 +56,7 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({
 
             <div className="flex items-center gap-2 text-[10px] font-extrabold text-slate-400">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>Google Firebase Cloud Encrypted</span>
+              <span>Supabase Cloud Encrypted</span>
             </div>
           </div>
 
@@ -159,27 +158,13 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({
             <div className="space-y-2 text-xs">
               <p className="flex items-center gap-2">
                 <Mail className="w-3.5 h-3.5 text-indigo-500" />
-                <span>yearinvo@gmail.com</span>
-              </p>
-              <p className="flex items-center gap-2">
-                <Phone className="w-3.5 h-3.5 text-emerald-400" />
-                <span>+880 1700-000000</span>
+                <a href="mailto:yearinvo@gmail.com" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                  yearinvo@gmail.com
+                </a>
               </p>
               <p className="text-slate-500 pt-1">
                 Dhaka, Bangladesh • Global Cloud Service
               </p>
-            </div>
-
-            {/* Social Links */}
-            <div className="pt-2 flex items-center gap-3">
-              {['Facebook', 'LinkedIn', 'YouTube', 'WhatsApp'].map((s, i) => (
-                <span
-                  key={i}
-                  className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 text-[10px] font-bold cursor-pointer transition-colors"
-                >
-                  {s}
-                </span>
-              ))}
             </div>
           </div>
 
@@ -224,7 +209,7 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({
                   <strong>1. Data Collection:</strong> We collect business profile information, user account credentials, product listings, and sales transaction logs solely to provide software functionality.
                 </p>
                 <p>
-                  <strong>2. Security:</strong> Your data is stored securely using Google Firebase Cloud database rules and encrypted connections.
+                  <strong>2. Security:</strong> Your data is stored securely using Supabase cloud database rules and encrypted connections.
                 </p>
                 <p>
                   <strong>3. Data Ownership:</strong> You retain complete ownership of all customer data, inventory listings, and sales records entered into YearInvo.

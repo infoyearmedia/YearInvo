@@ -32,7 +32,6 @@ import {
   ChevronDown,
   Mail,
   Phone,
-  Send,
   Building2,
   Lock,
   Award,
@@ -88,11 +87,6 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
   // Legal (Privacy / Terms) Modal State
   const [legalModal, setLegalModal] = useState<'privacy' | 'terms' | null>(null);
 
-  // Contact Form State
-  const [contactName, setContactName] = useState('');
-  const [contactEmail, setContactEmail] = useState('');
-  const [contactMessage, setContactMessage] = useState('');
-  const [contactSent, setContactSent] = useState(false);
 
   // Smooth scroll handler for mobile section links
   const scrollToSection = (sectionId: string) => {
@@ -104,18 +98,6 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
     }
   };
 
-  const handleContactSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (contactName && contactEmail && contactMessage) {
-      setContactSent(true);
-      setTimeout(() => {
-        setContactName('');
-        setContactEmail('');
-        setContactMessage('');
-        setContactSent(false);
-      }, 4000);
-    }
-  };
 
   const getPrice = (monthlyAmount: number) => {
     if (monthlyAmount === 0) return '0';
@@ -263,8 +245,7 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
       desc: isBn ? 'ছোট ব্যবসার জন্য ১ মাসের ফ্রি ট্রায়াল' : 'Perfect for small retail shops with 1 month free trial',
       features: [
         isBn ? '১টি শোরুম / দোকান শাখা' : '1 Store Branch',
-        isBn ? 'সর্বোচ্চ ১০০টি প্রোডাক্ট' : 'Up to 100 Products',
-        isBn ? 'স্ট্যান্ডার্ড POS ক্যাশ কাউন্টার' : 'Standard POS Checkout Terminal',
+        isBn ? 'সর্বোচ্চ ৫টি প্রোডাক্ট' : 'Up to 5 Products',
         isBn ? 'কাস্টমার বাকী খাতা' : 'Customer Due Ledger',
         isBn ? 'দৈনিক সেভার ক্লাউড ব্যাকআপ' : 'Daily Cloud Sync',
       ],
@@ -275,18 +256,15 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
       id: 'pro',
       name: 'Pro Business',
       badge: isBn ? 'সবচেয়ে জনপ্রিয়' : 'MOST POPULAR',
-      desc: isBn ? 'আনলিমিটেড প্রোডাক্ট ও বারকোড প্রিন্টিং' : 'Best for growing retail stores with unlimited inventory',
+      desc: isBn ? 'আনলিমিটেড প্রোডাক্ট ও অ্যাডভান্সড রিপোর্ট' : 'Best for growing retail stores with unlimited inventory',
       features: [
         isBn ? '১টি শোরুম / দোকান শাখা' : '1 Store Branch',
         isBn ? 'আনলিমিটেড প্রোডাক্ট ও ভ্যারিয়েন্ট' : 'Unlimited Products & Variants',
-        isBn ? 'স্ট্যান্ডার্ড POS ক্যাশ কাউন্টার' : 'Standard POS Checkout Terminal',
         isBn ? 'কাস্টমার বাকী খাতা' : 'Customer Due Ledger',
         isBn ? 'দৈনিক সেভার ক্লাউড ব্যাকআপ' : 'Daily Cloud Sync',
-        isBn ? 'হাই-স্পীড বারকোড স্টিকার প্রিন্ট' : 'High-Speed Barcode Label Printing',
         isBn ? 'থার্মাল মেমো ইনভয়েস প্রিন্ট' : 'Thermal Invoice Printing',
         isBn ? 'কাস্টমার ও সাপ্লায়ার বাকী খাতা' : 'Customer & Supplier Ledger',
         isBn ? 'স্টক ও মেয়ার্দ উত্তীর্ণ অ্যালার্ট' : 'Stock & Expiry Alerts',
-        isBn ? 'মাল্টি-স্টাফ ম্যানেজার রোলস' : 'Multi-Staff Manager Roles',
       ],
       buttonText: isBn ? 'প্রো প্ল্যানে যোগ দিন' : 'Get Started Pro',
       popular: true,
@@ -333,8 +311,8 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
     {
       q: isBn ? 'ডাটা কি হারিয়ে যাবে?' : 'Is my store data safe in the cloud?',
       a: isBn
-        ? 'না, গুগল ফায়ারবেস সিকিউর ক্লাউড ডাটাবেসে আপনার সকল হিসাব শতভাগ সংরক্ষিত ও এনক্রিপ্টেড থাকে।'
-        : 'Your store data is continuously backed up using Google Firebase Cloud encryption and strict authentication.',
+        ? 'না, সুপাবেস সিকিউর ক্লাউড ডাটাবেসে আপনার সকল হিসাব শতভাগ সংরক্ষিত ও এনক্রিপ্টেড থাকে।'
+        : 'Your store data is continuously backed up using Supabase Cloud encryption and strict authentication.',
     },
     {
       q: isBn ? 'ফ্রি ট্রায়ালের জন্য কি ক্রেডিট কার্ড লাগবে?' : 'Do I need a credit card for the free trial?',
@@ -831,6 +809,19 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
               {isBn ? 'মাসিক' : 'Monthly'}
             </button>
             <button
+              onClick={() => setBillingCycle('six_months')}
+              className={`px-2.5 py-1 font-black rounded-lg cursor-pointer flex items-center gap-1 ${
+                billingCycle === 'six_months'
+                  ? 'bg-indigo-600 text-white'
+                  : 'text-slate-600 dark:text-slate-400'
+              }`}
+            >
+              <span>{isBn ? '৬ মাস' : '6-Mo'}</span>
+              <span className="px-1 py-0.2 rounded bg-amber-400 text-slate-950 text-[8px] font-black">
+                {isBn ? '১৫% পর্যন্ত ছাড়' : 'Up to 15%'}
+              </span>
+            </button>
+            <button
               onClick={() => setBillingCycle('yearly')}
               className={`px-2.5 py-1 font-black rounded-lg cursor-pointer flex items-center gap-1 ${
                 billingCycle === 'yearly'
@@ -981,7 +972,7 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
           <div className="bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1">
             <Lock className="w-4 h-4 text-indigo-500" />
             <h4 className="font-bold text-slate-900 dark:text-white">Cloud Encrypted</h4>
-            <p className="text-[10px] text-slate-400">Firebase Powered</p>
+            <p className="text-[10px] text-slate-400">Supabase Powered</p>
           </div>
 
           <div className="bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1">
@@ -1032,49 +1023,23 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
           })}
         </div>
 
-        {/* Contact Quick Form */}
+        {/* Contact — email only (no in-app form; messages go by email) */}
         <div id="mobile-contact" className="bg-slate-100/80 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 space-y-3">
           <h3 className="text-xs font-black text-slate-900 dark:text-white">
             {isBn ? 'মেসেজ পাঠান' : 'Quick Message Support'}
           </h3>
-
-          {contactSent ? (
-            <p className="text-xs text-emerald-500 font-bold">✓ Message sent! We will contact you shortly.</p>
-          ) : (
-            <form onSubmit={handleContactSubmit} className="space-y-2 text-xs">
-              <input
-                type="text"
-                placeholder="Your Name *"
-                value={contactName}
-                onChange={(e) => setContactName(e.target.value)}
-                className="w-full p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
-                required
-              />
-              <input
-                type="email"
-                placeholder="Your Email *"
-                value={contactEmail}
-                onChange={(e) => setContactEmail(e.target.value)}
-                className="w-full p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
-                required
-              />
-              <textarea
-                rows={3}
-                placeholder="Message or question..."
-                value={contactMessage}
-                onChange={(e) => setContactMessage(e.target.value)}
-                className="w-full p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
-                required
-              />
-              <button
-                type="submit"
-                className="w-full py-2.5 bg-indigo-600 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <Send className="w-3.5 h-3.5" />
-                <span>Send Message</span>
-              </button>
-            </form>
-          )}
+          <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+            {isBn
+              ? 'আপনার প্রশ্ন ইমেইলে লিখুন — আপনার মেইল অ্যাপটি খুলে যাবে।'
+              : 'Write to us by email — this opens your mail app with our support address filled in.'}
+          </p>
+          <a
+            href="mailto:yearinvo@gmail.com?subject=YearInvo%20Support%20Request"
+            className="w-full py-2.5 bg-indigo-600 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+          >
+            <Mail className="w-3.5 h-3.5" />
+            <span>{isBn ? 'ইমেইল করুন — yearinvo@gmail.com' : 'Email Us — yearinvo@gmail.com'}</span>
+          </a>
         </div>
 
       </section>
@@ -1144,7 +1109,7 @@ export const MobileLandingPage: React.FC<MobileLandingPageProps> = ({
                   <strong>1. Data Collection:</strong> We collect business profile information, user account credentials, product listings, and sales transaction logs solely to provide software functionality.
                 </p>
                 <p>
-                  <strong>2. Security:</strong> Your data is stored securely using Google Firebase Cloud database rules and encrypted connections.
+                  <strong>2. Security:</strong> Your data is stored securely using Supabase cloud database rules and encrypted connections.
                 </p>
                 <p>
                   <strong>3. Data Ownership:</strong> You retain complete ownership of all customer data, inventory listings, and sales records entered into YearInvo.

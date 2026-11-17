@@ -103,13 +103,13 @@ export const LandingPricing: React.FC<LandingPricingProps> = ({ onOpenSignup }) 
       popular: false,
       features: [
         isBn ? '১টি শোরুম / দোকান শাখা' : '1 Store Branch',
-        isBn ? 'সর্বোচ্চ ১০০টি প্রোডাক্ট যুক্ত করার সুবিধা' : 'Up to 100 Active Products',
-        isBn ? 'স্ট্যান্ডার্ড POS ক্যাশ কাউন্টার' : 'Standard POS Checkout Terminal',
+        isBn ? 'সর্বোচ্চ ৫টি প্রোডাক্ট যুক্ত করার সুবিধা' : 'Up to 5 Active Products',
         isBn ? 'কাস্টমার বকেয়া খাতা ও হিসেব' : 'Customer Due Ledger',
         isBn ? 'দৈনিক সেলস ও লাভ রিপোর্ট' : 'Basic Daily Sales Summary',
         isBn ? 'নিরাপদ ক্লাউড ডাটা ব্যাকআপ' : 'Secure Cloud Data Synchronization',
       ],
       notIncluded: [
+        isBn ? 'স্ট্যান্ডার্ড POS ক্যাশ কাউন্টার' : 'Standard POS Checkout Terminal',
         isBn ? 'বারকোড স্টিকার প্রিন্ট জেনারেটর' : 'Barcode Sticker Printing',
         isBn ? 'মাল্টি-স্টাফ রুলস ও পারমিশন' : 'Multi-Staff Role Management',
         isBn ? 'কাস্টম লোগো ও ব্র্যান্ডিং' : 'Custom Store Logo Printing',
@@ -123,24 +123,23 @@ export const LandingPricing: React.FC<LandingPricingProps> = ({ onOpenSignup }) 
       badge: isBn ? 'সবচেয়ে জনপ্রিয়' : 'MOST POPULAR',
       desc: isBn
         ? 'মাঝারি ও দ্রুত বর্ধনশীল দোকানের সকল আধুনিক ফিচারের জন্য সেরা প্ল্যান।'
-        : 'Best for growing retail stores needing unlimited products & barcode printing.',
+        : 'Best for growing retail stores needing unlimited products & advanced reports.',
       popular: true,
       features: [
         isBn ? '১টি শোরুম / দোকান শাখা' : '1 Store Branch',
         isBn ? 'আনলিমিটেড প্রোডাক্ট ও ভ্যারিয়েন্ট' : 'Unlimited Active Products',
-        isBn ? '১টি মূল শাখা + সাব-কাউন্টার' : '1 Main Branch + Multi-Counter POS',
-        isBn ? 'স্ট্যান্ডার্ড POS ক্যাশ কাউন্টার' : 'Standard POS Checkout Terminal',
         isBn ? 'কাস্টমার বকেয়া খাতা ও হিসেব' : 'Customer Due Ledger',
         isBn ? 'দৈনিক সেলস ও লাভ রিপোর্ট' : 'Basic Daily Sales Summary',
         isBn ? 'নিরাপদ ক্লাউড ডাটা ব্যাকআপ' : 'Secure Cloud Data Synchronization',
-        isBn ? 'হাই-স্পীড বারকোড ও QR স্টিকার প্রিন্ট' : 'High-Speed Barcode & QR Label Printing',
         isBn ? 'থার্মাল মেমো ইনভয়েস প্রিন্ট' : 'Thermal Invoice & Receipt Printing',
         isBn ? 'কাস্টমার ও সাপ্লায়ার বকেয়া ট্র্যাকিং' : 'Advanced Customer & Supplier Ledger',
         isBn ? 'স্টক অ্যালার্ট ও ডেট এক্সপায়ার্ড অ্যালার্ট' : 'Stock Reorder & Expired Product Warning',
-        isBn ? 'মাল্টি-স্টাফ ম্যানেজার/স্টাফ রোলস' : 'Multi-Staff Roles & Access Controls',
         isBn ? 'Excel / PDF রিপোর্ট এক্সপোর্ট' : 'Excel & PDF Export for All Reports',
       ],
       notIncluded: [
+        isBn ? 'স্ট্যান্ডার্ড POS ক্যাশ কাউন্টার' : 'Standard POS Checkout Terminal',
+        isBn ? 'হাই-স্পীড বারকোড ও QR স্টিকার প্রিন্ট' : 'High-Speed Barcode & QR Label Printing',
+        isBn ? 'মাল্টি-স্টাফ ম্যানেজার/স্টাফ রোলস' : 'Multi-Staff Roles & Access Controls',
         isBn ? 'কাস্টম ডোমেইন সংযোগ' : 'Custom Domain Connection',
       ],
       buttonText: isBn ? 'প্রো প্ল্যানে যোগ দিন' : 'Get Started Pro',
@@ -205,7 +204,7 @@ export const LandingPricing: React.FC<LandingPricingProps> = ({ onOpenSignup }) 
               : 'No hidden setup fees. Upgrade or adjust your subscription anytime as your business grows.'}
           </p>
 
-          {/* 3 Billing Cycle Selector (Monthly / Yearly / 5-Year) */}
+          {/* 4 Billing Cycle Selector (Monthly / 6-Month / Yearly / 5-Year) */}
           <div className="inline-flex flex-wrap items-center justify-center gap-1.5 bg-slate-100 dark:bg-slate-900 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
             <button
               onClick={() => setBillingCycle('monthly')}
@@ -216,6 +215,21 @@ export const LandingPricing: React.FC<LandingPricingProps> = ({ onOpenSignup }) 
               }`}
             >
               {isBn ? 'মাসিক বিলিং' : 'Monthly'}
+            </button>
+            <button
+              onClick={() => setBillingCycle('six_months')}
+              className={`px-3.5 py-2 text-xs font-black rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                billingCycle === 'six_months'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
+            >
+              <span>{isBn ? '৬ মাস' : '6-Month'}</span>
+              <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase ${
+                billingCycle === 'six_months' ? 'bg-amber-400 text-slate-950' : 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
+              }`}>
+                {isBn ? '১৫% পর্যন্ত ছাড়' : 'Up to 15% OFF'}
+              </span>
             </button>
             <button
               onClick={() => setBillingCycle('yearly')}

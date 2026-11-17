@@ -23,7 +23,6 @@ import {
   Filter,
   Search,
   Printer,
-  Download,
   Trash2,
   Edit2,
   Receipt,
@@ -42,7 +41,6 @@ export const PayrollView: React.FC = () => {
     expenses,
     addExpense,
     formatMoney,
-    formatCurrency,
     displayCurrency,
     language,
     t,
@@ -54,7 +52,7 @@ export const PayrollView: React.FC = () => {
     saveSalaryAdjustments: contextSaveSalaryAdjustments,
   } = useApp();
 
-  // Connected to real-time cloud Firestore synchronized state
+  // Synced with Supabase cloud state
   const employees = contextEmployees || [];
   const saveEmployees = (updated: Employee[]) => {
     if (contextSaveEmployees) {

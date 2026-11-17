@@ -20,7 +20,6 @@ import {
 export const SmartReorderView: React.FC = () => {
   const { products, sales, suppliers, addPurchase, setActiveTab, formatMoney, formatCurrency, displayCurrency, language } = useApp();
 
-  const [categoryFilter, setCategoryFilter] = useState('all');
   const [urgencyFilter, setUrgencyFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -72,7 +71,9 @@ export const SmartReorderView: React.FC = () => {
           minStockAlert: threshold,
           monthlySalesVelocity: monthlySales,
           recommendedReorderQty: calculatedQty,
-          supplierName: p.supplier || 'Primary Vendor',
+          // Product has no supplier field, so no supplier can be attributed
+          // here. Never fall back to an arbitrary supplier.
+          supplierName: 'No supplier linked',
           buyingPrice: p.buyingPrice,
           estimatedCost: calculatedQty * p.buyingPrice,
           urgency,
@@ -90,9 +91,8 @@ export const SmartReorderView: React.FC = () => {
   // Filtered List
   const filteredItems = reorderItems.filter((item) => {
     const matchesSearch = item.productName.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter;
     const matchesUrgency = urgencyFilter === 'all' || item.urgency === urgencyFilter;
-    return matchesSearch && matchesCategory && matchesUrgency;
+    return matchesSearch && matchesUrgency;
   });
 
   // Aggregate metrics
@@ -103,11 +103,16 @@ export const SmartReorderView: React.FC = () => {
 
   // Quick Purchase generation
   const handleQuickReorder = (item: SmartReorderItem) => {
-    const matchingSupplier = suppliers.find((s) => s.name === item.supplierName) || suppliers[0];
+    // Products carry no supplier link, so no supplier can be resolved here.
+    // Never silently fall back to suppliers[0]; record the order as unpaid
+    // (no payment has been made) with the full amount outstanding.
+    const matchingSupplier = item.supplierId
+      ? suppliers.find((s) => s.id === item.supplierId)
+      : undefined;
 
     addPurchase({
       supplierId: matchingSupplier?.id || '',
-      supplierName: matchingSupplier?.name || item.supplierName || 'General Supplier',
+      supplierName: matchingSupplier?.name || item.supplierName || 'No supplier linked',
       invoiceNo: `PO-${Date.now().toString().slice(-6)}`,
       date: new Date().toISOString(),
       items: [
@@ -120,8 +125,8 @@ export const SmartReorderView: React.FC = () => {
         },
       ],
       totalAmount: item.estimatedCost,
-      paidAmount: item.estimatedCost,
-      dueAmount: 0,
+      paidAmount: 0,
+      dueAmount: item.estimatedCost,
       paymentMethod: 'Cash',
       notes: `Smart Reorder PO: Replenishment for ${item.productName}`,
     });

@@ -14,7 +14,6 @@ import {
 
 interface LandingHeroProps {
   onOpenSignup: (plan?: 'free' | 'pro' | 'premium') => void;
-  onOpenLogin: () => void;
   onOpenDemo: () => void;
 }
 
@@ -143,7 +142,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onOpenSignup, onOpenDe
               transition={{ duration: 0.7, delay: 0.2 }}
               className="lg:col-span-6 relative flex justify-center"
             >
-              <RetailInventoryAnimation onOpenSignup={onOpenSignup} />
+              <RetailInventoryAnimation />
             </motion.div>
           </div>
         </div>

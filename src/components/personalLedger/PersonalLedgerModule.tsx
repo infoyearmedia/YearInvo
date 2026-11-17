@@ -9,7 +9,6 @@ import {
   Clock,
   Plus,
   LayoutDashboard,
-  ShieldCheck,
 } from 'lucide-react';
 import { PersonalLedgerOverview } from './PersonalLedgerOverview';
 import { PersonalLedgerContactsList } from './PersonalLedgerContactsList';

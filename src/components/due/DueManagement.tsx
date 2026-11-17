@@ -22,8 +22,8 @@ import {
 } from 'lucide-react';
 
 export const DueManagement: React.FC = () => {
-  const { customers, suppliers, dueCollections, collectDue, metrics, settings, t } = useApp();
-  const symbol = settings.currency || '৳';
+  const { customers, suppliers, dueCollections, collectDue, metrics, settings, t, formatCurrency, displayCurrencySymbol } = useApp();
+  const symbol = displayCurrencySymbol;
 
   const [activeTab, setActiveTab] = useState<'customers' | 'suppliers' | 'history'>('customers');
   const [historySearch, setHistorySearch] = useState<string>('');
@@ -54,6 +54,12 @@ export const DueManagement: React.FC = () => {
   const handleConfirmCollection = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedEntityForPay || payAmount <= 0) return;
+    if (payAmount > selectedEntityForPay.currentDue) {
+      alert(
+        `Payment amount cannot exceed the outstanding due (${formatCurrency(selectedEntityForPay.currentDue)}).`
+      );
+      return;
+    }
 
     collectDue({
       type: selectedEntityForPay.type,
@@ -151,7 +157,7 @@ export const DueManagement: React.FC = () => {
             </div>
           </div>
           <h3 className="text-xl font-black text-rose-600 dark:text-rose-400 mt-2">
-            {symbol} {(metrics?.totalDueCustomers || 0).toLocaleString()}
+            {formatCurrency((metrics?.totalDueCustomers || 0))}
           </h3>
           <p className="text-[11px] text-slate-400 mt-0.5">Current outstanding store credit</p>
         </div>
@@ -165,7 +171,7 @@ export const DueManagement: React.FC = () => {
             </div>
           </div>
           <h3 className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-2">
-            {symbol} {(totalCustomerDuesReceived || 0).toLocaleString()}
+            {formatCurrency((totalCustomerDuesReceived || 0))}
           </h3>
           <p className="text-[11px] text-slate-400 mt-0.5">Total collected payment history</p>
         </div>
@@ -179,7 +185,7 @@ export const DueManagement: React.FC = () => {
             </div>
           </div>
           <h3 className="text-xl font-black text-slate-800 dark:text-slate-100 mt-2">
-            {symbol} {(metrics?.totalDueSuppliers || 0).toLocaleString()}
+            {formatCurrency((metrics?.totalDueSuppliers || 0))}
           </h3>
           <p className="text-[11px] text-slate-400 mt-0.5">Current unpaid bulk purchase debts</p>
         </div>
@@ -193,7 +199,7 @@ export const DueManagement: React.FC = () => {
             </div>
           </div>
           <h3 className="text-xl font-black text-blue-600 dark:text-blue-400 mt-2">
-            {symbol} {(totalSupplierDuesPaid || 0).toLocaleString()}
+            {formatCurrency((totalSupplierDuesPaid || 0))}
           </h3>
           <p className="text-[11px] text-slate-400 mt-0.5">Total paid to suppliers to date</p>
         </div>
@@ -242,7 +248,7 @@ export const DueManagement: React.FC = () => {
                         </td>
                         <td className="p-3.5 text-slate-500 font-medium">{c.phone}</td>
                         <td className="p-3.5 text-right font-bold text-slate-800 dark:text-slate-100">
-                          {symbol} {(c.totalSpent || 0).toLocaleString()}
+                          {formatCurrency((c.totalSpent || 0))}
                         </td>
                         {/* Clickable Collection History Amount */}
                         <td className="p-3.5 text-right">
@@ -252,28 +258,28 @@ export const DueManagement: React.FC = () => {
                             title="Click to view full payment history logs"
                           >
                             <Eye className="w-3.5 h-3.5" />
-                            <span>{symbol} {(custPaidHistory || 0).toLocaleString()}</span>
+                            <span>{formatCurrency((custPaidHistory || 0))}</span>
                           </button>
                         </td>
                         {/* Current Due */}
                         <td className="p-3.5 text-right font-black text-rose-600 dark:text-rose-400 text-sm">
-                          {symbol} {(c.dueAmount || c.totalDue || 0).toLocaleString()}
+                          {formatCurrency((c.dueAmount || 0))}
                         </td>
                         <td className="p-3.5 text-center">
                           <div className="flex items-center justify-center gap-1.5">
                             <button
                               onClick={() => {
-                                const currentDue = c.dueAmount || c.totalDue || 0;
+                                const currentDue = c.dueAmount || 0;
                                 setSelectedEntityForPay({ id: c.id, name: c.name, type: 'customer', currentDue });
                                 setPayAmount(currentDue);
                               }}
-                              disabled={(c.dueAmount || c.totalDue || 0) === 0}
+                              disabled={(c.dueAmount || 0) === 0}
                               className="px-3 py-1.5 bg-[#ff5c01] hover:bg-[#e05100] disabled:bg-slate-200 dark:disabled:bg-slate-800 text-white font-bold rounded-xl shadow-xs transition-all text-xs cursor-pointer"
                             >
                               Collect Due
                             </button>
                             <button
-                              onClick={() => setSelectedCustomerForShare({ ...c, totalDue: c.dueAmount || c.totalDue || 0 })}
+                              onClick={() => setSelectedCustomerForShare(c)}
                               className="p-1.5 bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 text-rose-600 dark:text-rose-400 rounded-lg transition-colors cursor-pointer"
                               title="Share Customer Due Statement"
                             >
@@ -344,11 +350,11 @@ export const DueManagement: React.FC = () => {
                             title="Click to view full payment logs"
                           >
                             <Eye className="w-3.5 h-3.5" />
-                            <span>{symbol} {(suppPaidHistory || 0).toLocaleString()}</span>
+                            <span>{formatCurrency((suppPaidHistory || 0))}</span>
                           </button>
                         </td>
                         <td className="p-3.5 text-right font-black text-amber-600 dark:text-amber-400 text-sm">
-                          {symbol} {(s.dueAmount || 0).toLocaleString()}
+                          {formatCurrency((s.dueAmount || 0))}
                         </td>
                         <td className="p-3.5 text-center">
                           <div className="flex items-center justify-center gap-2">
@@ -478,10 +484,10 @@ export const DueManagement: React.FC = () => {
                       <td className="p-3.5 font-bold text-slate-800 dark:text-slate-100">{rec.entityName}</td>
                       <td className="p-3.5 font-semibold text-slate-600 dark:text-slate-300">{rec.paymentMethod}</td>
                       <td className="p-3.5 text-right font-black text-emerald-600 dark:text-emerald-400 text-sm">
-                        {symbol} {(rec.amountPaid || 0).toLocaleString()}
+                        {formatCurrency((rec.amountPaid || 0))}
                       </td>
                       <td className="p-3.5 text-right font-bold text-slate-500">
-                        {symbol} {(rec.remainingDue || 0).toLocaleString()}
+                        {formatCurrency((rec.remainingDue || 0))}
                       </td>
                       <td className="p-3.5 text-slate-400 italic max-w-xs truncate">{rec.note || '-'}</td>
                     </tr>
@@ -541,10 +547,10 @@ export const DueManagement: React.FC = () => {
 
                       <div className="text-right">
                         <div className="font-black text-sm text-emerald-600 dark:text-emerald-400">
-                          {symbol} {(rec.amountPaid || 0).toLocaleString()}
+                          {formatCurrency((rec.amountPaid || 0))}
                         </div>
                         <div className="text-[10px] text-slate-400 font-semibold">
-                          Remaining Due: {symbol}{(rec.remainingDue || 0).toLocaleString()}
+                          Remaining Due: {formatCurrency((rec.remainingDue || 0))}
                         </div>
                       </div>
                     </div>
@@ -611,7 +617,7 @@ export const DueManagement: React.FC = () => {
               <p className="text-slate-500">
                 Current Due Balance:{' '}
                 <span className="font-black text-rose-600">
-                  {symbol} {(selectedEntityForPay?.currentDue || 0).toLocaleString()}
+                  {formatCurrency((selectedEntityForPay?.currentDue || 0))}
                 </span>
               </p>
             </div>

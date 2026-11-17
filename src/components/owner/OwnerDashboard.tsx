@@ -86,7 +86,7 @@ export const OwnerDashboard: React.FC = () => {
     user,
     allUsers,
     updateUserRole,
-    sendFirebasePasswordReset,
+    sendSupabasePasswordReset,
     suspendUser,
     activateUser,
     blockUser,
@@ -535,7 +535,9 @@ export const OwnerDashboard: React.FC = () => {
     e.preventDefault();
     if (!resetModalUser) return;
     resetUserPassword(resetModalUser.id, newPasswordInput);
-    setResetSuccessMsg(`Password for ${resetModalUser.ownerName} has been reset to "${newPasswordInput}".`);
+    // resetUserPassword sends a Supabase password-reset email to the
+    // account; it cannot set the typed password directly from the frontend.
+    setResetSuccessMsg(`Password reset link sent to ${resetModalUser.email}. The user sets their new password from that email.`);
     setTimeout(() => {
       setResetSuccessMsg(null);
       setResetModalUser(null);
@@ -544,8 +546,12 @@ export const OwnerDashboard: React.FC = () => {
 
   const handleSendEmailResetLink = async () => {
     if (!resetModalUser) return;
-    const res = await sendFirebasePasswordReset(resetModalUser.email);
-    setResetSuccessMsg(res.message || 'Password reset email sent successfully.');
+    const res = await sendSupabasePasswordReset(resetModalUser.email);
+    if (res.success) {
+      setResetSuccessMsg(res.message || 'Password reset email sent successfully.');
+    } else {
+      alert(res.message || 'Failed to send password reset email.');
+    }
   };
 
   // Confirm Action Handler
@@ -2299,7 +2305,7 @@ export const OwnerDashboard: React.FC = () => {
                   onClick={handleSendEmailResetLink}
                   className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs rounded-xl cursor-pointer"
                 >
-                  Send Firebase Password Reset Email
+                  Send Password Reset Email
                 </button>
               </div>
             </form>
