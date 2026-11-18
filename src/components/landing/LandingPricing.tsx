@@ -228,7 +228,7 @@ export const LandingPricing: React.FC<LandingPricingProps> = ({ onOpenSignup }) 
               <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase ${
                 billingCycle === 'six_months' ? 'bg-amber-400 text-slate-950' : 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
               }`}>
-                {isBn ? '১৫% পর্যন্ত ছাড়' : 'Up to 15% OFF'}
+                {isBn ? '১০% ছাড়' : '10% OFF'}
               </span>
             </button>
             <button

@@ -4,8 +4,8 @@
  * Single Source of Truth for:
  * - 3 Exact Plans: Free Trial (30 days / 1 month), Pro, Premium
  * - 3 Supported Billing Periods: 1 Month (monthly), 6 Months (six_months), 1 Year (yearly)
- * - Bangladesh (BDT) Local Pricing & Discounts (Pro: ৳100/mo, ৳540 6mo = 10% off, ৳1,020 1yr = 15% off, ৳4,500 5yr = 25% off; Premium: ৳250/mo, ৳1,275 6mo = 15% off, ৳2,550 1yr = 15% off, ৳11,250 5yr = 25% off)
- * - International (USD) Base Pricing & Discounts (Pro: $1.50/mo, $7.65 6mo = 15% off, $15.30 1yr = 15% off, $67.50 5yr = 25% off; Premium: $3.50/mo, $17.85 6mo = 15% off, $35.70 1yr = 15% off, $157.50 5yr = 25% off)
+ * - Bangladesh (BDT) Local Pricing & Discounts (Pro: ৳100/mo, ৳540 6mo = 10% off, ৳1,020 1yr = 15% off, ৳4,500 5yr = 25% off; Premium: ৳250/mo, ৳1,350 6mo = 10% off, ৳2,550 1yr = 15% off, ৳11,250 5yr = 25% off)
+ * - International (USD) Base Pricing & Discounts (Pro: $1.50/mo, $8.10 6mo = 10% off, $15.30 1yr = 15% off, $67.50 5yr = 25% off; Premium: $3.50/mo, $18.90 6mo = 10% off, $35.70 1yr = 15% off, $157.50 5yr = 25% off)
  * - Every long-cycle total below is exactly monthly x months x (1 - discount), so the
  *   advertised discount labels (15% yearly, 25% five-year) are always true.
  * - Dynamic Live Currency Conversion Engine for any display currency
@@ -60,8 +60,8 @@ export const PRICING_CONFIG = {
       monthly: 250, // ৳250 / month
       monthlyIntro: 250,
       monthlyRenewal: 250,
-      sixMonths: 1275, // ৳1,275 = 15% off 6 x ৳250 (৳1,500)
-      sixMonthsDiscountPercent: 15,
+      sixMonths: 1350, // ৳1,350 = 10% off 6 x ৳250 (৳1,500)
+      sixMonthsDiscountPercent: 10,
       yearly: 2550, // ৳2,550 = 15% off 12 x ৳250 (৳3,000), i.e. ৳212.50/mo
       yearlyDiscountPercent: 15,
       fiveYear: 11250, // ৳11,250 = 25% off 60 x ৳250 (৳15,000), i.e. ৳187.50/mo
@@ -76,8 +76,8 @@ export const PRICING_CONFIG = {
       monthly: 1.50, // $1.50 / month, same every month
       monthlyIntro: 1.50,
       monthlyRenewal: 1.50,
-      sixMonths: 7.65, // $7.65 = 15% off 6 x $1.50 ($9.00)
-      sixMonthsDiscountPercent: 15,
+      sixMonths: 8.10, // $8.10 = 10% off 6 x $1.50 ($9.00)
+      sixMonthsDiscountPercent: 10,
       yearly: 15.30, // $15.30 = 15% off 12 x $1.50 ($18.00), i.e. $1.28/mo
       yearlyDiscountPercent: 15,
       fiveYear: 67.50, // $67.50 = 25% off 60 x $1.50 ($90.00), i.e. $1.13/mo
@@ -87,8 +87,8 @@ export const PRICING_CONFIG = {
       monthly: 3.50, // $3.50 / month
       monthlyIntro: 3.50,
       monthlyRenewal: 3.50,
-      sixMonths: 17.85, // $17.85 = 15% off 6 x $3.50 ($21.00)
-      sixMonthsDiscountPercent: 15,
+      sixMonths: 18.90, // $18.90 = 10% off 6 x $3.50 ($21.00)
+      sixMonthsDiscountPercent: 10,
       yearly: 35.70, // $35.70 = 15% off 12 x $3.50 ($42.00), i.e. $2.98/mo
       yearlyDiscountPercent: 15,
       fiveYear: 157.50, // $157.50 = 25% off 60 x $3.50 ($210.00), i.e. $2.63/mo
